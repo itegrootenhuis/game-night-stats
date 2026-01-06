@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - stores Supabase Auth user reference
+model User {
+  id        String   @id // This will be the Supabase Auth user ID
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  gameNights GameNight[]
+  players    Player[]
+  games      Game[]
+
+  @@index([email])
+}
+
+model GameNight {
+  id        String   @id @default(cuid())
+  userId    String   // Owner of this game night
+  name      String
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameSessions GameSession[]
+
+  @@index([userId])
+  @@index([date])
+}
+
+model Player {
+  id        String   @id @default(cuid())
+  userId    String   // Owner of this player entry
+  name      String
+  createdAt DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameResults GameResult[]
+
+  @@unique([userId, name]) // Player names unique per user
+  @@index([userId])
+  @@index([name])
+}
+
+model Game {
+  id        String   @id @default(cuid())
+  userId    String   // Owner of this game entry
+  name      String
+  createdAt DateTime @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameSessions GameSession[]
+
+  @@unique([userId, name]) // Game names unique per user
+  @@index([userId])
+  @@index([name])
+}
+
+model GameSession {
+  id          String   @id @default(cuid())
+  gameNightId String
+  gameId      String
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  gameNight GameNight @relation(fields: [gameNightId], references: [id], onDelete: Cascade)
+  game      Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  results   GameResult[]
+
+  @@index([gameNightId])
+  @@index([gameId])
+  @@index([date])
+}
+
+model GameResult {
+  id            String   @id @default(cuid())
+  gameSessionId String
+  playerId      String
+  position      Int      // 1 = winner, 2 = second place, etc. (lower is better)
+  points        Int?     // Optional points/score
+  isWinner      Boolean  @default(false) // True if winner (position 1 or tied for 1st)
+  createdAt     DateTime @default(now())
+
+  gameSession GameSession @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  player      Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([gameSessionId])
+  @@index([playerId])
+  @@index([isWinner])
+}
+
