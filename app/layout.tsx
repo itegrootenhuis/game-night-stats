@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Header } from '@/components/Header'
+import { Footer } from '@/components/Footer'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -20,9 +21,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-background antialiased">
+      <body className="min-h-screen bg-background antialiased flex flex-col">
         <Header />
-        {children}
+        <div className="flex-1">
+          {children}
+        </div>
+        <Footer />
       </body>
     </html>
   )
