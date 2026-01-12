@@ -15,6 +15,7 @@ import {
   Clock,
   Users
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface ShareLink {
   id: string
@@ -71,9 +72,13 @@ export default function SharePage() {
         setShowCreateModal(false)
         setNewLinkName('')
         setNewLinkExpiry('')
+        toast.success('Share link created!')
+      } else {
+        toast.error('Failed to create share link')
       }
     } catch (error) {
       console.error('Failed to create share link:', error)
+      toast.error('Failed to create share link')
     } finally {
       setCreating(false)
     }
@@ -87,9 +92,13 @@ export default function SharePage() {
 
       if (response.ok) {
         setShareLinks(prev => prev.filter(link => link.id !== id))
+        toast.success('Share link deleted')
+      } else {
+        toast.error('Failed to delete share link')
       }
     } catch (error) {
       console.error('Failed to delete share link:', error)
+      toast.error('Failed to delete share link')
     }
   }
 
@@ -106,9 +115,13 @@ export default function SharePage() {
         setShareLinks(prev => prev.map(link => 
           link.id === id ? updatedLink : link
         ))
+        toast.success(currentStatus ? 'Link deactivated' : 'Link activated')
+      } else {
+        toast.error('Failed to update share link')
       }
     } catch (error) {
       console.error('Failed to toggle share link:', error)
+      toast.error('Failed to update share link')
     }
   }
 
@@ -123,6 +136,7 @@ export default function SharePage() {
     const url = getShareUrl(token)
     await navigator.clipboard.writeText(url)
     setCopiedId(token)
+    toast.success('Link copied to clipboard!')
     setTimeout(() => setCopiedId(null), 2000)
   }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser } from '@/lib/auth'
+import { checkRateLimit } from '@/lib/ratelimit'
 
 export async function GET() {
   try {
@@ -11,6 +12,12 @@ export async function GET() {
         { error: 'Unauthorized' },
         { status: 401 }
       )
+    }
+
+    // Rate limit by user ID
+    const { success, response } = await checkRateLimit(user.id)
+    if (!success && response) {
+      return response
     }
 
     const players = await prisma.player.findMany({

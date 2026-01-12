@@ -97,6 +97,66 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getAuthenticatedUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { id } = await params
+    const body = await request.json()
+    const { name } = body
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Game name is required' },
+        { status: 400 }
+      )
+    }
+
+    // Verify the game belongs to this user
+    const existingGame = await prisma.game.findUnique({
+      where: { id, userId: user.id }
+    })
+
+    if (!existingGame) {
+      return NextResponse.json(
+        { error: 'Game not found' },
+        { status: 404 }
+      )
+    }
+
+    const game = await prisma.game.update({
+      where: { id },
+      data: { name: name.trim() }
+    })
+
+    return NextResponse.json(game)
+  } catch (error: unknown) {
+    console.error('Failed to update game:', error)
+    
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'A game with this name already exists' },
+        { status: 409 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to update game' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

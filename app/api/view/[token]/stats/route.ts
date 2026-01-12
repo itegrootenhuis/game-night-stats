@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkRateLimit, getClientIP } from '@/lib/ratelimit'
 
 // GET - Public endpoint to get stats via share token (read-only)
 export async function GET(
@@ -7,6 +8,13 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    // Rate limit public endpoint
+    const ip = getClientIP(request)
+    const { success, response } = await checkRateLimit(ip, true)
+    if (!success && response) {
+      return response
+    }
+
     const { token } = await params
 
     // Find the share link by token

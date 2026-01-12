@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Trophy, Target, TrendingUp, Users, Loader2, Crown, Gamepad2, ChevronDown, User, Percent, Calendar, X } from 'lucide-react'
+import { ArrowLeft, Trophy, Target, TrendingUp, Users, Crown, Gamepad2, ChevronDown, User, Percent, Calendar, X, Loader2 } from 'lucide-react'
+import { Skeleton, SkeletonWidget, SkeletonChart, SkeletonLeaderboard, SkeletonRecentGames } from '@/components/Skeleton'
 import {
   BarChart,
   Bar,
@@ -548,8 +549,44 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen p-4 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+      <main className="min-h-screen p-4 pb-20">
+        <div className="max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto">
+          {/* Header Skeleton */}
+          <div className="flex items-center gap-4 mb-6">
+            <Skeleton className="w-9 h-9 rounded-lg" />
+            <Skeleton className="h-7 w-32" />
+          </div>
+
+          {/* Filters Skeleton */}
+          <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="h-3 w-16 mb-2" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Stats Widgets Skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <SkeletonWidget />
+            <SkeletonWidget />
+            <SkeletonWidget className="col-span-2 lg:col-span-1" />
+          </div>
+
+          {/* Charts Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <SkeletonLeaderboard />
+            <SkeletonChart />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <SkeletonChart />
+            <SkeletonRecentGames />
+          </div>
+        </div>
       </main>
     )
   }

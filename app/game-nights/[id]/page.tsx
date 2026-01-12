@@ -2,7 +2,9 @@
 
 import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Trophy, Loader2, X, Gamepad2, Users, Check, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Plus, Trophy, Loader2, X, Gamepad2, Users, Check, ChevronDown, Pencil, Trash2 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { toast } from 'sonner'
 
 interface Player {
   id: string
@@ -52,6 +54,11 @@ export default function GameNightPage({ params }: { params: Promise<{ id: string
   const [winners, setWinners] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [editingSession, setEditingSession] = useState<GameSession | null>(null)
+  const [editWinners, setEditWinners] = useState<string[]>([])
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deleteSession, setDeleteSession] = useState<{ id: string; gameName: string } | null>(null)
+  const [deletingSession, setDeletingSession] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -176,6 +183,78 @@ export default function GameNightPage({ params }: { params: Promise<{ id: string
     setError('')
   }
 
+  const startEditingSession = (session: GameSession) => {
+    setEditingSession(session)
+    setEditWinners(session.results.filter(r => r.isWinner).map(r => r.player.id))
+  }
+
+  const cancelEditingSession = () => {
+    setEditingSession(null)
+    setEditWinners([])
+  }
+
+  const toggleEditWinner = (playerId: string) => {
+    if (editWinners.includes(playerId)) {
+      setEditWinners(editWinners.filter(id => id !== playerId))
+    } else {
+      setEditWinners([...editWinners, playerId])
+    }
+  }
+
+  const saveSessionEdit = async () => {
+    if (!editingSession || editWinners.length === 0) {
+      toast.error('Please select at least one winner')
+      return
+    }
+
+    setSavingEdit(true)
+    try {
+      const res = await fetch(`/api/game-nights/${id}/sessions/${editingSession.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ winnerIds: editWinners })
+      })
+
+      if (res.ok) {
+        toast.success('Game updated')
+        fetchData()
+        cancelEditingSession()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Failed to update game')
+      }
+    } catch (err) {
+      console.error('Failed to update session:', err)
+      toast.error('Failed to update game')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const confirmDeleteSession = async () => {
+    if (!deleteSession) return
+
+    setDeletingSession(true)
+    try {
+      const res = await fetch(`/api/game-nights/${id}/sessions/${deleteSession.id}`, {
+        method: 'DELETE'
+      })
+
+      if (res.ok) {
+        toast.success(`${deleteSession.gameName} removed`)
+        fetchData()
+        setDeleteSession(null)
+      } else {
+        toast.error('Failed to delete game')
+      }
+    } catch (err) {
+      console.error('Failed to delete session:', err)
+      toast.error('Failed to delete game')
+    } finally {
+      setDeletingSession(false)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'long',
@@ -238,33 +317,100 @@ export default function GameNightPage({ params }: { params: Promise<{ id: string
                   key={session.id}
                   className="p-4 rounded-xl bg-zinc-900 border border-zinc-800"
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <Gamepad2 className="w-5 h-5 text-teal-400" />
-                    <h3 className="font-semibold text-white">{session.game.name}</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Gamepad2 className="w-5 h-5 text-teal-400" />
+                      <h3 className="font-semibold text-white">{session.game.name}</h3>
+                    </div>
+                    {editingSession?.id !== session.id && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => startEditingSession(session)}
+                          className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition"
+                          title="Edit winner"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteSession({ id: session.id, gameName: session.game.name })}
+                          className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-red-400 transition"
+                          title="Delete game"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="space-y-2">
-                    {session.results.map((result) => (
-                      <div
-                        key={result.id}
-                        className={`flex items-center justify-between px-3 py-2 rounded-lg ${
-                          result.isWinner 
-                            ? 'bg-amber-500/10 border border-amber-500/20' 
-                            : 'bg-zinc-800/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {result.isWinner && <Trophy className="w-4 h-4 text-amber-400" />}
-                          <span className={result.isWinner ? 'text-amber-400 font-medium' : 'text-zinc-400'}>
-                            {result.player.name}
-                          </span>
-                        </div>
-                        {result.isWinner && (
-                          <span className="text-xs text-amber-400/70 uppercase tracking-wider">Winner</span>
-                        )}
+                  {editingSession?.id === session.id ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-zinc-400">Select winner(s):</p>
+                      <div className="space-y-2">
+                        {session.results.map((result) => (
+                          <button
+                            key={result.id}
+                            onClick={() => toggleEditWinner(result.player.id)}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition ${
+                              editWinners.includes(result.player.id)
+                                ? 'bg-amber-500/20 border border-amber-500/50' 
+                                : 'bg-zinc-800/50 border border-transparent hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Trophy className={`w-4 h-4 ${
+                                editWinners.includes(result.player.id) ? 'text-amber-400' : 'text-zinc-600'
+                              }`} />
+                              <span className={editWinners.includes(result.player.id) ? 'text-amber-400 font-medium' : 'text-zinc-400'}>
+                                {result.player.name}
+                              </span>
+                            </div>
+                            {editWinners.includes(result.player.id) && (
+                              <Check className="w-4 h-4 text-amber-400" />
+                            )}
+                          </button>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={saveSessionEdit}
+                          disabled={savingEdit || editWinners.length === 0}
+                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {savingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                          Save
+                        </button>
+                        <button
+                          onClick={cancelEditingSession}
+                          className="px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {session.results.map((result) => (
+                        <div
+                          key={result.id}
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg ${
+                            result.isWinner 
+                              ? 'bg-amber-500/10 border border-amber-500/20' 
+                              : 'bg-zinc-800/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {result.isWinner && <Trophy className="w-4 h-4 text-amber-400" />}
+                            <span className={result.isWinner ? 'text-amber-400 font-medium' : 'text-zinc-400'}>
+                              {result.player.name}
+                            </span>
+                          </div>
+                          {result.isWinner && (
+                            <span className="text-xs text-amber-400/70 uppercase tracking-wider">Winner</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -479,6 +625,18 @@ export default function GameNightPage({ params }: { params: Promise<{ id: string
           </div>
         </div>
       </div>
+
+      {/* Delete Game Session Confirmation */}
+      <ConfirmDialog
+        open={!!deleteSession}
+        onOpenChange={(open) => !open && setDeleteSession(null)}
+        title="Delete Game"
+        description={`Are you sure you want to delete ${deleteSession?.gameName}? This will remove all results for this game.`}
+        confirmText="Delete"
+        variant="danger"
+        onConfirm={confirmDeleteSession}
+        loading={deletingSession}
+      />
     </main>
   )
 }

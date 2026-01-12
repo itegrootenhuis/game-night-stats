@@ -88,6 +88,66 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getAuthenticatedUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { id } = await params
+    const body = await request.json()
+    const { name } = body
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Player name is required' },
+        { status: 400 }
+      )
+    }
+
+    // Verify the player belongs to this user
+    const existingPlayer = await prisma.player.findUnique({
+      where: { id, userId: user.id }
+    })
+
+    if (!existingPlayer) {
+      return NextResponse.json(
+        { error: 'Player not found' },
+        { status: 404 }
+      )
+    }
+
+    const player = await prisma.player.update({
+      where: { id },
+      data: { name: name.trim() }
+    })
+
+    return NextResponse.json(player)
+  } catch (error: unknown) {
+    console.error('Failed to update player:', error)
+    
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'A player with this name already exists' },
+        { status: 409 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to update player' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

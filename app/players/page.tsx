@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Users, X, Trophy, Target, Loader2 } from 'lucide-react'
+import { ArrowLeft, Plus, Users, X, Trophy, Target, Loader2, Pencil, Check } from 'lucide-react'
+import { Skeleton, SkeletonCard } from '@/components/Skeleton'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { toast } from 'sonner'
 
 interface Player {
   id: string
@@ -21,6 +24,11 @@ export default function PlayersPage() {
   const [showAddPlayer, setShowAddPlayer] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [editingPlayer, setEditingPlayer] = useState<{ id: string; name: string } | null>(null)
+  const [editName, setEditName] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     fetchPlayers()
@@ -54,39 +62,108 @@ export default function PlayersPage() {
       })
 
       if (res.ok) {
+        toast.success(`${newPlayerName.trim()} added successfully!`)
         setNewPlayerName('')
         setShowAddPlayer(false)
         fetchPlayers()
       } else {
         const data = await res.json()
         setError(data.error || 'Failed to add player')
+        toast.error(data.error || 'Failed to add player')
       }
     } catch (err) {
       console.error('Failed to add player:', err)
       setError('Failed to add player')
+      toast.error('Failed to add player')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const handleRemovePlayer = async (playerId: string) => {
+  const confirmDeletePlayer = async () => {
+    if (!deleteConfirm) return
+    
+    setDeleting(true)
     try {
-      const res = await fetch(`/api/players/${playerId}`, {
+      const res = await fetch(`/api/players/${deleteConfirm.id}`, {
         method: 'DELETE'
       })
 
       if (res.ok) {
-        setPlayers(players.filter(p => p.id !== playerId))
+        setPlayers(players.filter(p => p.id !== deleteConfirm.id))
+        toast.success(`${deleteConfirm.name} removed`)
+        setDeleteConfirm(null)
+      } else {
+        toast.error('Failed to remove player')
       }
     } catch (err) {
       console.error('Failed to remove player:', err)
+      toast.error('Failed to remove player')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const startEditing = (player: Player) => {
+    setEditingPlayer({ id: player.id, name: player.name })
+    setEditName(player.name)
+  }
+
+  const cancelEditing = () => {
+    setEditingPlayer(null)
+    setEditName('')
+  }
+
+  const saveEdit = async () => {
+    if (!editingPlayer || !editName.trim()) return
+    if (editName.trim() === editingPlayer.name) {
+      cancelEditing()
+      return
+    }
+
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/players/${editingPlayer.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editName.trim() })
+      })
+
+      if (res.ok) {
+        setPlayers(players.map(p => 
+          p.id === editingPlayer.id ? { ...p, name: editName.trim() } : p
+        ))
+        toast.success('Player updated')
+        cancelEditing()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Failed to update player')
+      }
+    } catch (err) {
+      console.error('Failed to update player:', err)
+      toast.error('Failed to update player')
+    } finally {
+      setSaving(false)
     }
   }
 
   if (loading) {
     return (
-      <main className="min-h-screen p-4 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+      <main className="min-h-screen p-4 pb-20">
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-9 h-9 rounded-lg" />
+              <Skeleton className="h-7 w-24" />
+            </div>
+            <Skeleton className="w-9 h-9 rounded-lg" />
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        </div>
       </main>
     )
   }
@@ -155,35 +232,76 @@ export default function PlayersPage() {
                 key={player.id}
                 className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-zinc-800"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-600 to-sky-500 flex items-center justify-center">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-600 to-sky-500 flex items-center justify-center flex-shrink-0">
                     <span className="text-white font-semibold">
-                      {player.name.charAt(0).toUpperCase()}
+                      {(editingPlayer?.id === player.id ? editName : player.name).charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <div>
-                    <p className="font-medium text-white">{player.name}</p>
-                    <div className="flex items-center gap-3 text-xs text-zinc-500">
-                      <span className="flex items-center gap-1">
-                        <Trophy className="w-3 h-3" /> {player.stats.wins} wins
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Target className="w-3 h-3" /> {player.stats.totalGames} games
-                      </span>
-                      {player.stats.totalGames > 0 && (
-                        <span className="text-teal-400">
-                          {player.stats.winRate}% win rate
-                        </span>
-                      )}
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    {editingPlayer?.id === player.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEdit()
+                            if (e.key === 'Escape') cancelEditing()
+                          }}
+                          autoFocus
+                          className="flex-1 px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:border-teal-500"
+                        />
+                        <button
+                          onClick={saveEdit}
+                          disabled={saving || !editName.trim()}
+                          className="p-1 rounded hover:bg-zinc-700 text-teal-400 disabled:opacity-50"
+                        >
+                          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={cancelEditing}
+                          className="p-1 rounded hover:bg-zinc-700 text-zinc-400"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="font-medium text-white">{player.name}</p>
+                        <div className="flex items-center gap-3 text-xs text-zinc-500">
+                          <span className="flex items-center gap-1">
+                            <Trophy className="w-3 h-3" /> {player.stats.wins} wins
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Target className="w-3 h-3" /> {player.stats.totalGames} games
+                          </span>
+                          {player.stats.totalGames > 0 && (
+                            <span className="text-teal-400">
+                              {player.stats.winRate}% win rate
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
-                <button
-                  onClick={() => handleRemovePlayer(player.id)}
-                  className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                {editingPlayer?.id !== player.id && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => startEditing(player)}
+                      className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm({ id: player.id, name: player.name })}
+                      className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -204,6 +322,18 @@ export default function PlayersPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Delete Player"
+        description={`Are you sure you want to delete ${deleteConfirm?.name}? This will also remove all their game results.`}
+        confirmText="Delete"
+        variant="danger"
+        onConfirm={confirmDeletePlayer}
+        loading={deleting}
+      />
     </main>
   )
 }

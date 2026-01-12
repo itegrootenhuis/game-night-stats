@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -27,6 +28,17 @@ export default function RootLayout({
           {children}
         </div>
         <Footer />
+        <Toaster 
+          theme="dark" 
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: '#18181b',
+              border: '1px solid #27272a',
+              color: '#fafafa',
+            },
+          }}
+        />
       </body>
     </html>
   )
