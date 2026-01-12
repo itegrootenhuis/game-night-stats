@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LogOut, User, ChevronDown } from 'lucide-react'
+import { LogOut, User, ChevronDown, Share2 } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 export function Header() {
@@ -107,9 +107,17 @@ export function Header() {
                       {user.email}
                     </p>
                   </div>
+                  <Link
+                    href="/share"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share Stats
+                  </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors border-t border-zinc-800"
                   >
                     <LogOut className="w-4 h-4" />
                     Sign out
