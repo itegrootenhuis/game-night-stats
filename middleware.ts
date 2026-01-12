@@ -35,8 +35,19 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Public paths that don't require authentication (visitor view)
+  const publicPaths = ['/view']
+  const isPublicPath = publicPaths.some(path => 
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  // Skip auth check for public paths
+  if (isPublicPath) {
+    return supabaseResponse
+  }
+
   // Protected routes - redirect to login if not authenticated
-  const protectedPaths = ['/dashboard', '/game-nights', '/players', '/games']
+  const protectedPaths = ['/dashboard', '/game-nights', '/players', '/games', '/share']
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   )

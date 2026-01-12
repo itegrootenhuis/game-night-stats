@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Trophy, Target, TrendingUp, Users, Loader2, Crown, Gamepad2, ChevronDown, User, Percent, Calendar } from 'lucide-react'
+import { ArrowLeft, Trophy, Target, TrendingUp, Users, Loader2, Crown, Gamepad2, ChevronDown, User, Percent, Calendar, X } from 'lucide-react'
 import {
   BarChart,
   Bar,
@@ -140,39 +140,25 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    // If game night is selected, use game night filter (this is mutually exclusive)
-    if (selectedGameNightId) {
-      setSelectedGameId('')
-      setSelectedPlayerId('')
-      setStartDate('')
-      setEndDate('')
-      setGameStats(null)
-      setPlayerStats(null)
-      return
-    }
-    
     // If game is selected (without game night), fetch game stats
-    if (selectedGameId) {
+    // Game and Player are mutually exclusive (unless game night is selected)
+    if (selectedGameId && !selectedGameNightId) {
       fetchGameStats(selectedGameId)
-      setSelectedPlayerId('') // Player and Game are mutually exclusive
+      setSelectedPlayerId('') // Player and Game are mutually exclusive when no game night
       setPlayerStats(null)
-    } else {
+    } else if (!selectedGameId) {
       setGameStats(null)
     }
   }, [selectedGameId, selectedGameNightId])
 
   useEffect(() => {
-    // If game night is selected, ignore player selection
-    if (selectedGameNightId) {
-      return
-    }
-    
     // If player is selected (without game night), fetch player stats
-    if (selectedPlayerId) {
+    // Game and Player are mutually exclusive (unless game night is selected)
+    if (selectedPlayerId && !selectedGameNightId) {
       fetchPlayerStats(selectedPlayerId)
-      setSelectedGameId('') // Player and Game are mutually exclusive
+      setSelectedGameId('') // Player and Game are mutually exclusive when no game night
       setGameStats(null)
-    } else {
+    } else if (!selectedPlayerId) {
       setPlayerStats(null)
     }
   }, [selectedPlayerId, selectedGameNightId])
@@ -211,6 +197,16 @@ export default function DashboardPage() {
     
     fetchFilteredData()
   }, [startDate, endDate, selectedGameId, selectedPlayerId, selectedGameNightId])
+
+  const clearAllFilters = () => {
+    setSelectedGameNightId('')
+    setSelectedGameId('')
+    setSelectedPlayerId('')
+    setStartDate('')
+    setEndDate('')
+    setGameStats(null)
+    setPlayerStats(null)
+  }
 
   const fetchData = async () => {
     try {
@@ -306,7 +302,7 @@ export default function DashboardPage() {
     ? gameNights.find(gn => gn.id === selectedGameNightId) 
     : null
 
-  // Calculate game night specific stats
+  // Calculate game night specific stats (with optional game/player filters)
   const getGameNightStats = () => {
     if (!selectedGameNight) return null
 
@@ -314,6 +310,11 @@ export default function DashboardPage() {
     const gameCount: Record<string, { name: string; count: number }> = {}
 
     selectedGameNight.gameSessions.forEach(session => {
+      // Filter by game if selected
+      if (selectedGameId && session.game.id !== selectedGameId) {
+        return
+      }
+
       // Count games
       if (!gameCount[session.game.id]) {
         gameCount[session.game.id] = { name: session.game.name, count: 0 }
@@ -322,6 +323,11 @@ export default function DashboardPage() {
 
       // Count player stats
       session.results.forEach(result => {
+        // Filter by player if selected
+        if (selectedPlayerId && result.player.id !== selectedPlayerId) {
+          return
+        }
+
         if (!playerWins[result.player.id]) {
           playerWins[result.player.id] = { name: result.player.name, wins: 0, played: 0 }
         }
@@ -357,6 +363,7 @@ export default function DashboardPage() {
 
   // Determine what leaderboard to show
   const getDisplayLeaderboard = () => {
+    // Game night stats (with optional game/player filters)
     if (selectedGameNightId && gameNightStats) {
       return gameNightStats.leaderboard
     }
@@ -365,7 +372,7 @@ export default function DashboardPage() {
       return stats?.leaderboard || []
     }
     // Otherwise, use specific game/player stats if selected
-    if (selectedPlayerId && playerStats) {
+    if (selectedPlayerId && playerStats && !selectedGameNightId) {
       return playerStats.stats.gameStats.map(g => ({
         id: g.gameId,
         name: g.gameName,
@@ -374,7 +381,7 @@ export default function DashboardPage() {
         winRate: g.winRate
       }))
     }
-    if (selectedGameId && gameStats) {
+    if (selectedGameId && gameStats && !selectedGameNightId) {
       return gameStats.stats.leaderboard.map(p => ({
         id: p.playerId,
         name: p.name,
@@ -496,16 +503,31 @@ export default function DashboardPage() {
     if (!stats?.recentGames) return []
     
     if (selectedGameNightId && selectedGameNight) {
-      // Show games from this game night
-      return selectedGameNight.gameSessions.map(session => ({
-        id: session.id,
-        gameName: session.game.name,
-        winners: session.results.filter(r => r.isWinner).map(r => r.player.name),
-        playerCount: session.results.length
-      }))
+      // Show games from this game night (with optional game/player filters)
+      let sessions = selectedGameNight.gameSessions
+      
+      // Filter by game if selected
+      if (selectedGameId) {
+        sessions = sessions.filter(s => s.game.id === selectedGameId)
+      }
+      
+      return sessions.map(session => {
+        let results = session.results
+        // Filter by player if selected
+        if (selectedPlayerId) {
+          results = results.filter(r => r.player.id === selectedPlayerId)
+        }
+        
+        return {
+          id: session.id,
+          gameName: session.game.name,
+          winners: results.filter(r => r.isWinner).map(r => r.player.name),
+          playerCount: results.length
+        }
+      })
     }
 
-    if (selectedPlayerId && playerStats) {
+    if (selectedPlayerId && playerStats && !selectedGameNightId) {
       return playerStats.gameResults.slice(0, 5).map(result => ({
         id: result.id,
         gameName: result.gameSession.game.name,
@@ -515,7 +537,7 @@ export default function DashboardPage() {
       }))
     }
     
-    if (selectedGameId && gameStats) {
+    if (selectedGameId && gameStats && !selectedGameNightId) {
       return stats.recentGames.filter(game => game.gameName === gameStats.name).slice(0, 5)
     }
     
@@ -534,7 +556,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen p-4 pb-20">
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Link 
@@ -547,26 +569,38 @@ export default function DashboardPage() {
         </div>
 
         {/* Active Filters Display */}
-        {(startDate || endDate || selectedGameId || selectedPlayerId) && (
-          <div className="mb-4 p-3 rounded-lg bg-blue-600/20 border border-blue-500/30">
+        {(startDate || endDate || selectedGameId || selectedPlayerId || selectedGameNightId) && (
+          <div className="mb-4 p-3 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-between">
             <p className="text-sm text-blue-300">
               Active filters:{' '}
-              {(startDate || endDate) && (
+              {selectedGameNightId && (
                 <span className="font-medium text-white">
-                  {startDate ? formatFullDate(startDate) : 'beginning'} to {endDate ? formatFullDate(endDate) : 'now'}
+                  Game Night: {gameNights.find(gn => gn.id === selectedGameNightId)?.name || 'Unknown'}
                 </span>
               )}
               {selectedGameId && (
                 <span className="font-medium text-white ml-2">
-                  · Game: {games.find(g => g.id === selectedGameId)?.name || 'Unknown'}
+                  {selectedGameNightId ? '·' : ''} Game: {games.find(g => g.id === selectedGameId)?.name || 'Unknown'}
                 </span>
               )}
               {selectedPlayerId && (
                 <span className="font-medium text-white ml-2">
-                  · Player: {players.find(p => p.id === selectedPlayerId)?.name || 'Unknown'}
+                  {selectedGameNightId || selectedGameId ? '·' : ''} Player: {players.find(p => p.id === selectedPlayerId)?.name || 'Unknown'}
+                </span>
+              )}
+              {(startDate || endDate) && (
+                <span className="font-medium text-white ml-2">
+                  {(selectedGameNightId || selectedGameId || selectedPlayerId) ? '·' : ''} {startDate ? formatFullDate(startDate) : 'beginning'} to {endDate ? formatFullDate(endDate) : 'now'}
                 </span>
               )}
             </p>
+            <button
+              onClick={clearAllFilters}
+              className="ml-4 p-1 rounded hover:bg-blue-500/20 transition-colors"
+              aria-label="Clear all filters"
+            >
+              <X className="w-4 h-4 text-blue-300" />
+            </button>
           </div>
         )}
 
@@ -584,7 +618,7 @@ export default function DashboardPage() {
                 <p className="text-sm text-teal-300">Player Stats</p>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="text-center">
                 <p className="text-2xl font-bold text-white">{playerStats.stats.totalGames}</p>
                 <p className="text-xs text-zinc-400">Games</p>
@@ -610,7 +644,7 @@ export default function DashboardPage() {
                 <p className="text-sm text-emerald-300">{formatFullDate(selectedGameNight.date)}</p>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="text-center">
                 <p className="text-2xl font-bold text-white">{selectedGameNight.stats.totalGames}</p>
                 <p className="text-xs text-zinc-400">Games</p>
@@ -628,15 +662,7 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-              <div className="flex items-center gap-2 mb-2">
-                <Trophy className="w-4 h-4 text-amber-400" />
-                <span className="text-xs text-zinc-500 uppercase tracking-wider">Total Wins</span>
-              </div>
-              <p className="text-2xl font-bold text-white">{stats?.overview.totalWins || 0}</p>
-            </div>
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
             <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="w-4 h-4 text-teal-400" />
@@ -666,7 +692,7 @@ export default function DashboardPage() {
         {/* Filters */}
         <div className="space-y-4 mb-6">
           {/* Date Range Filter */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
               <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">
                 <Calendar className="w-3 h-3 inline mr-1" />
@@ -707,7 +733,7 @@ export default function DashboardPage() {
           )}
 
           {/* Other Filters */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             {/* Game Night Filter */}
             {gameNights.length > 0 && (
               <div>
@@ -720,10 +746,8 @@ export default function DashboardPage() {
                     value={selectedGameNightId}
                   onChange={(e) => {
                     setSelectedGameNightId(e.target.value)
-                    // Game night filter is mutually exclusive with others
+                    // Clear date filters when game night is selected (but allow game/player)
                     if (e.target.value) {
-                      setSelectedGameId('')
-                      setSelectedPlayerId('')
                       setStartDate('')
                       setEndDate('')
                     }
@@ -754,10 +778,9 @@ export default function DashboardPage() {
                     value={selectedGameId}
                     onChange={(e) => {
                       setSelectedGameId(e.target.value)
-                      // Game filter can work with date range, but clears player
-                      if (e.target.value) {
+                      // Game filter can work with game night or date range, but clears player if no game night
+                      if (e.target.value && !selectedGameNightId) {
                         setSelectedPlayerId('')
-                        setSelectedGameNightId('')
                       }
                     }}
                     className="w-full px-2 py-2 pr-6 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition cursor-pointer"
@@ -786,10 +809,9 @@ export default function DashboardPage() {
                     value={selectedPlayerId}
                     onChange={(e) => {
                       setSelectedPlayerId(e.target.value)
-                      // Player filter can work with date range, but clears game
-                      if (e.target.value) {
+                      // Player filter can work with game night or date range, but clears game if no game night
+                      if (e.target.value && !selectedGameNightId) {
                         setSelectedGameId('')
-                        setSelectedGameNightId('')
                       }
                     }}
                     className="w-full px-2 py-2 pr-6 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition cursor-pointer"
@@ -814,13 +836,15 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         {/* Wins Bar Chart */}
         {!loadingFilter && winsChartData.length > 0 && (
-          <div className="mb-6">
+          <div>
             <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
               <Trophy className="w-4 h-4 inline mr-1" />
               {selectedGameNightId && selectedGameNight
-                ? `${selectedGameNight.name} Winners`
+                ? `${selectedGameNight.name}${selectedGameId ? ` - ${games.find(g => g.id === selectedGameId)?.name || 'Game'}` : ''}${selectedPlayerId ? ` - ${players.find(p => p.id === selectedPlayerId)?.name || 'Player'}` : ''} Winners`
                 : selectedPlayerId && playerStats 
                   ? `${playerStats.name}'s Wins by Game`
                   : selectedGameId && gameStats 
@@ -828,7 +852,7 @@ export default function DashboardPage() {
                     : 'Wins by Player'}
             </h2>
             <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-4">
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={winsChartData} layout="vertical" margin={{ left: 0, right: 20 }}>
                   <XAxis type="number" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis 
@@ -850,7 +874,7 @@ export default function DashboardPage() {
 
         {/* Win Rate by Game Chart (Player View Only) */}
         {!loadingFilter && selectedPlayerId && winRateChartData.length > 0 && (
-          <div className="mb-6">
+          <div>
             <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
               <Percent className="w-4 h-4 inline mr-1" />
               Win Rate by Game
@@ -889,7 +913,7 @@ export default function DashboardPage() {
           (selectedGameNightId && gameNightGamesData.length > 0) || 
           (!selectedGameId && !selectedPlayerId && !selectedGameNightId && gamesPlayedChartData.length > 0)
         ) && (
-          <div className="mb-6">
+          <div>
             <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
               <Gamepad2 className="w-4 h-4 inline mr-1" />
               {selectedGameNightId ? 'Games Played This Night' : 'Games Distribution'}
@@ -921,52 +945,68 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Games Played vs Wins (Only when no player/game night filter) */}
+        {/* Player Win Percentage (Only when no player/game night filter) */}
         {!loadingFilter && !selectedPlayerId && !selectedGameNightId && winsChartData.length > 0 && (
-          <div className="mb-6">
+          <div>
             <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
-              <TrendingUp className="w-4 h-4 inline mr-1" />
-              Games Played vs Wins
+              <Percent className="w-4 h-4 inline mr-1" />
+              Player Win Percentage
             </h2>
             <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-4">
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={winsChartData} margin={{ left: 0, right: 20 }}>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={winsChartData} layout="vertical" margin={{ left: 60, right: 20, top: 10, bottom: 10 }}>
                   <XAxis 
-                    dataKey="name" 
+                    type="number" 
+                    domain={[0, 100]}
                     stroke="#71717a" 
-                    fontSize={11} 
+                    fontSize={12} 
                     tickLine={false} 
                     axisLine={false}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
+                    tickFormatter={(value) => `${value}%`}
                   />
-                  <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip content={<CustomBarTooltip />} cursor={{ fill: 'rgba(13, 115, 119, 0.1)' }} />
-                  <Bar dataKey="games" fill="#3f3f46" radius={[4, 4, 0, 0]} name="Games" />
-                  <Bar dataKey="wins" fill="#0d7377" radius={[4, 4, 0, 0]} name="Wins" />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    stroke="#71717a" 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false}
+                    width={55}
+                  />
+                  <Tooltip 
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload
+                        return (
+                          <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 shadow-lg">
+                            <p className="text-white font-medium">{label}</p>
+                            <p className="text-sm text-zinc-400">
+                              Win Rate: <span className="text-white">{data.winRate}%</span>
+                            </p>
+                            <p className="text-sm text-zinc-400">
+                              Wins: <span className="text-white">{data.wins}</span> / <span className="text-white">{data.games}</span> games
+                            </p>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                    cursor={{ fill: 'rgba(13, 115, 119, 0.1)' }} 
+                  />
+                  <Bar dataKey="winRate" fill="#0d7377" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-              <div className="flex items-center justify-center gap-6 mt-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-zinc-700"></div>
-                  <span className="text-xs text-zinc-500">Games Played</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-teal-500"></div>
-                  <span className="text-xs text-zinc-500">Wins</span>
-                </div>
-              </div>
             </div>
           </div>
         )}
+        </div>
 
         {/* Leaderboard / Game Stats List */}
         {!loadingFilter && (
           <div className="mb-6">
             <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
               {selectedGameNightId && selectedGameNight
-                ? `${selectedGameNight.name} Leaderboard`
+                ? `${selectedGameNight.name}${selectedGameId ? ` - ${games.find(g => g.id === selectedGameId)?.name || 'Game'}` : ''}${selectedPlayerId ? ` - ${players.find(p => p.id === selectedPlayerId)?.name || 'Player'}` : ''} Leaderboard`
                 : selectedPlayerId && playerStats 
                   ? `${playerStats.name}'s Game Stats`
                   : selectedGameId && gameStats 
