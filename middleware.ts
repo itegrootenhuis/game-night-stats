@@ -50,12 +50,6 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   )
 
-  // #region agent log
-  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
-    fetch('http://127.0.0.1:7242/ingest/acc9b804-01c2-45a6-8223-42a227cc8625',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'middleware.ts:48',message:'Auth callback in middleware',data:{pathname:request.nextUrl.pathname,isPublicPath,hasUser:!!user},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
-  }
-  // #endregion
-
   // Skip auth check for public paths
   if (isPublicPath) {
     return supabaseResponse

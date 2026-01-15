@@ -48,37 +48,24 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    // #region agent log
     const redirectUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
-    fetch('http://127.0.0.1:7242/ingest/acc9b804-01c2-45a6-8223-42a227cc8625',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.tsx:47',message:'Google login initiated',data:{redirect,redirectUrl,origin:window.location.origin},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B'})}).catch(()=>{});
-    // #endregion
 
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
         },
       })
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/acc9b804-01c2-45a6-8223-42a227cc8625',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.tsx:59',message:'signInWithOAuth response',data:{hasError:!!error,errorMessage:error?.message,hasData:!!data,url:data?.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
-
       if (error) {
         setError(error.message)
         setLoading(false)
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/acc9b804-01c2-45a6-8223-42a227cc8625',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.tsx:64',message:'OAuth error detected',data:{errorMessage:error.message,errorCode:error.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
       }
     } catch (err) {
       setError('An unexpected error occurred')
       console.error(err)
       setLoading(false)
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/acc9b804-01c2-45a6-8223-42a227cc8625',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'login/page.tsx:70',message:'OAuth exception',data:{errorMessage:err instanceof Error ? err.message : String(err)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
     }
   }
 
@@ -211,4 +198,3 @@ export default function LoginPage() {
     </main>
   )
 }
-
