@@ -339,7 +339,7 @@ export default function ViewPage({ params }: { params: Promise<{ token: string }
                       paddingAngle={2}
                       dataKey="winRate"
                       nameKey="name"
-                      label={({ name, winRate }) => `${name}: ${winRate}%`}
+                      label={({ name, value }) => `${name}: ${value}%`}
                       labelLine={false}
                     >
                       {winPercentageData.map((_, index) => (
