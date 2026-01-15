@@ -49,6 +49,8 @@ export async function GET() {
       return {
         id: player.id,
         name: player.name,
+        color: player.color,
+        avatarUrl: player.avatarUrl,
         createdAt: player.createdAt,
         stats: {
           totalGames,
@@ -80,7 +82,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name } = body
+    const { name, color, avatarUrl } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json(
@@ -92,6 +94,8 @@ export async function POST(request: Request) {
     const player = await prisma.player.create({
       data: {
         name: name.trim(),
+        color: color && typeof color === 'string' && color.trim().length > 0 ? color.trim() : null,
+        avatarUrl: avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim().length > 0 ? avatarUrl.trim() : null,
         userId: user.id
       }
     })

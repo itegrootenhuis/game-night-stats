@@ -42,12 +42,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, expiresAt } = body
+    const { name, expiresAt, groupTag } = body
 
     const shareLink = await prisma.shareLink.create({
       data: {
         userId: user.id,
         name: name || null,
+        groupTag: groupTag || null,
         expiresAt: expiresAt ? new Date(expiresAt) : null
       }
     })

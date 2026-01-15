@@ -21,6 +21,7 @@ interface ShareLink {
   id: string
   token: string
   name: string | null
+  groupTag: string | null
   isActive: boolean
   expiresAt: string | null
   createdAt: string
@@ -35,10 +36,26 @@ export default function SharePage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [newLinkName, setNewLinkName] = useState('')
   const [newLinkExpiry, setNewLinkExpiry] = useState('')
+  const [newLinkGroupTag, setNewLinkGroupTag] = useState('')
+  const [existingGroupTags, setExistingGroupTags] = useState<string[]>([])
+  const [showGroupTagDropdown, setShowGroupTagDropdown] = useState(false)
 
   useEffect(() => {
     fetchShareLinks()
+    fetchGroupTags()
   }, [])
+
+  async function fetchGroupTags() {
+    try {
+      const response = await fetch('/api/game-nights/groups')
+      if (response.ok) {
+        const data = await response.json()
+        setExistingGroupTags(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch group tags:', error)
+    }
+  }
 
   async function fetchShareLinks() {
     try {
@@ -62,7 +79,8 @@ export default function SharePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newLinkName || null,
-          expiresAt: newLinkExpiry || null
+          expiresAt: newLinkExpiry || null,
+          groupTag: newLinkGroupTag.trim() || null
         })
       })
 
@@ -72,6 +90,7 @@ export default function SharePage() {
         setShowCreateModal(false)
         setNewLinkName('')
         setNewLinkExpiry('')
+        setNewLinkGroupTag('')
         toast.success('Share link created!')
       } else {
         toast.error('Failed to create share link')
@@ -157,22 +176,22 @@ export default function SharePage() {
     <main className="min-h-screen p-4 pb-20">
       <div className="max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex items-start sm:items-center justify-between mb-8 gap-4">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
             <Link 
-              href="/dashboard"
-              className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition"
+              href="/"
+              className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition flex-shrink-0"
             >
               <ArrowLeft className="w-5 h-5 text-zinc-400" />
             </Link>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold text-white">Share Your Stats</h1>
               <p className="text-sm text-zinc-400">Create links to share your game night stats with friends</p>
             </div>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-500 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-500 transition-colors flex-shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Link</span>
@@ -242,12 +261,18 @@ export default function SharePage() {
                     <p className="text-sm text-zinc-500 truncate mb-2">
                       {getShareUrl(link.token)}
                     </p>
-                    <div className="flex items-center gap-4 text-xs text-zinc-500">
+                    <div className="flex items-center gap-4 text-xs text-zinc-500 flex-wrap">
                       <span>Created {formatDate(link.createdAt)}</span>
                       {link.expiresAt && (
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           Expires {formatDate(link.expiresAt)}
+                        </span>
+                      )}
+                      {link.groupTag && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-teal-600/20 text-teal-400">
+                          <Users className="w-3 h-3" />
+                          Group: {link.groupTag}
                         </span>
                       )}
                     </div>
@@ -338,6 +363,48 @@ export default function SharePage() {
                   />
                   <p className="text-xs text-zinc-500 mt-1">
                     Leave empty for no expiration
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-2">
+                    Group Tag (optional)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={newLinkGroupTag}
+                      onChange={(e) => {
+                        setNewLinkGroupTag(e.target.value)
+                        setShowGroupTagDropdown(true)
+                      }}
+                      onFocus={() => setShowGroupTagDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowGroupTagDropdown(false), 200)}
+                      placeholder="e.g., Weekend Group, Work Friends"
+                      className="w-full px-4 py-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                    {showGroupTagDropdown && existingGroupTags.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {existingGroupTags
+                          .filter(tag => tag.toLowerCase().includes(newLinkGroupTag.toLowerCase()))
+                          .map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => {
+                                setNewLinkGroupTag(tag)
+                                setShowGroupTagDropdown(false)
+                              }}
+                              className="w-full px-4 py-2 text-left text-white hover:bg-zinc-800 transition text-sm"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Filter share link to only show game nights with this tag. Leave empty to show all game nights.
                   </p>
                 </div>
               </div>

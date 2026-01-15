@@ -56,6 +56,7 @@ export async function GET() {
         id: gn.id,
         name: gn.name,
         date: gn.date,
+        groupTag: gn.groupTag,
         createdAt: gn.createdAt,
         stats: {
           totalGames,
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, date, playerIds } = body
+    const { name, date, playerIds, groupTag } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json(
@@ -102,6 +103,7 @@ export async function POST(request: Request) {
       data: {
         name: name.trim(),
         date: date ? new Date(date) : new Date(),
+        groupTag: groupTag && typeof groupTag === 'string' && groupTag.trim().length > 0 ? groupTag.trim() : null,
         userId: user.id
       }
     })

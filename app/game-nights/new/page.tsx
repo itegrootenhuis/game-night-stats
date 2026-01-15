@@ -21,9 +21,13 @@ export default function NewGameNightPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [groupTag, setGroupTag] = useState('')
+  const [existingGroupTags, setExistingGroupTags] = useState<string[]>([])
+  const [showGroupTagDropdown, setShowGroupTagDropdown] = useState(false)
 
   useEffect(() => {
     fetchPlayers()
+    fetchGroupTags()
   }, [])
 
   const fetchPlayers = async () => {
@@ -37,6 +41,18 @@ export default function NewGameNightPage() {
       console.error('Failed to fetch players:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchGroupTags = async () => {
+    try {
+      const res = await fetch('/api/game-nights/groups')
+      if (res.ok) {
+        const data = await res.json()
+        setExistingGroupTags(data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch group tags:', err)
     }
   }
 
@@ -97,7 +113,8 @@ export default function NewGameNightPage() {
         body: JSON.stringify({
           name: name.trim(),
           date,
-          playerIds: selectedPlayerIds
+          playerIds: selectedPlayerIds,
+          groupTag: groupTag.trim() || undefined
         })
       })
 
@@ -167,6 +184,49 @@ export default function NewGameNightPage() {
                 className="w-full pl-12 pr-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white focus:outline-none focus:border-teal-500 transition"
               />
             </div>
+          </div>
+
+          {/* Group Tag (Optional) */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
+              Group Tag (Optional)
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={groupTag}
+                onChange={(e) => {
+                  setGroupTag(e.target.value)
+                  setShowGroupTagDropdown(true)
+                }}
+                onFocus={() => setShowGroupTagDropdown(true)}
+                onBlur={() => setTimeout(() => setShowGroupTagDropdown(false), 200)}
+                placeholder="e.g., Weekend Group, Work Friends"
+                className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:border-teal-500 transition"
+              />
+              {showGroupTagDropdown && existingGroupTags.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {existingGroupTags
+                    .filter(tag => tag.toLowerCase().includes(groupTag.toLowerCase()))
+                    .map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => {
+                          setGroupTag(tag)
+                          setShowGroupTagDropdown(false)
+                        }}
+                        className="w-full px-4 py-2 text-left text-white hover:bg-zinc-800 transition text-sm"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-zinc-500">
+              Tag this game night to filter share links (e.g., "Weekend Group", "Work Friends")
+            </p>
           </div>
 
           {/* Players */}

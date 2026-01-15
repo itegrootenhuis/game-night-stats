@@ -104,14 +104,7 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { name } = body
-
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Player name is required' },
-        { status: 400 }
-      )
-    }
+    const { name, color, avatarUrl } = body
 
     // Verify the player belongs to this user
     const existingPlayer = await prisma.player.findUnique({
@@ -125,9 +118,29 @@ export async function PATCH(
       )
     }
 
+    const updateData: { name?: string; color?: string | null; avatarUrl?: string | null } = {}
+
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Player name is required' },
+          { status: 400 }
+        )
+      }
+      updateData.name = name.trim()
+    }
+
+    if (color !== undefined) {
+      updateData.color = color && typeof color === 'string' && color.trim().length > 0 ? color.trim() : null
+    }
+
+    if (avatarUrl !== undefined) {
+      updateData.avatarUrl = avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim().length > 0 ? avatarUrl.trim() : null
+    }
+
     const player = await prisma.player.update({
       where: { id },
-      data: { name: name.trim() }
+      data: updateData
     })
 
     return NextResponse.json(player)

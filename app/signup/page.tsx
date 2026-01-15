@@ -71,7 +71,7 @@ export default function SignupPage() {
           }),
         })
 
-        router.push('/dashboard')
+        router.push('/')
         router.refresh()
       }
     } catch (err) {

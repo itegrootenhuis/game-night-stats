@@ -96,7 +96,7 @@ export default function SettingsPage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link 
-            href="/dashboard"
+            href="/"
             className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition"
           >
             <ArrowLeft className="w-5 h-5 text-zinc-400" />

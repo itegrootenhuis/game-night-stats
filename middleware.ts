@@ -6,9 +6,18 @@ export async function middleware(request: NextRequest) {
     request,
   })
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // If Supabase env vars are missing, allow requests to pass through
+  // This allows the app to at least load and show proper error messages
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return supabaseResponse
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -35,11 +44,17 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Public paths that don't require authentication (visitor view)
-  const publicPaths = ['/view']
+  // Public paths that don't require authentication (visitor view and auth callbacks)
+  const publicPaths = ['/view', '/auth/callback']
   const isPublicPath = publicPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   )
+
+  // #region agent log
+  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+    fetch('http://127.0.0.1:7242/ingest/acc9b804-01c2-45a6-8223-42a227cc8625',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'middleware.ts:48',message:'Auth callback in middleware',data:{pathname:request.nextUrl.pathname,isPublicPath,hasUser:!!user},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+  }
+  // #endregion
 
   // Skip auth check for public paths
   if (isPublicPath) {
@@ -47,10 +62,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protected routes - redirect to login if not authenticated
-  const protectedPaths = ['/dashboard', '/game-nights', '/players', '/games', '/share', '/settings']
+  // Note: '/' is the home page (dashboard) and should be protected
+  const protectedPaths = ['/game-nights', '/players', '/games', '/share', '/settings']
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
-  )
+  ) || request.nextUrl.pathname === '/'
 
   if (isProtectedPath && !user) {
     const url = request.nextUrl.clone()
@@ -67,7 +83,7 @@ export async function middleware(request: NextRequest) {
 
   if (isAuthPath && user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/'
     return NextResponse.redirect(url)
   }
 

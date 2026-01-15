@@ -29,6 +29,7 @@ model ShareLink {
   userId    String    // Owner who created the share link
   token     String    @unique @default(cuid()) // Unique token for the link
   name      String?   // Optional name (e.g., "Share with John")
+  groupTag  String?   // Optional: Filter share link to specific group tag
   isActive  Boolean   @default(true)
   expiresAt DateTime? // Optional expiration
   createdAt DateTime  @default(now())
@@ -44,21 +45,43 @@ model GameNight {
   userId    String   // Owner of this game night
   name      String
   date      DateTime @default(now())
+  groupTag  String?  // Optional: Tag for grouping (e.g., "Weekend Group", "Work Friends")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   gameSessions GameSession[]
+  comments     Comment[]
 
   @@index([userId])
   @@index([date])
+  @@index([userId, groupTag])
+}
+
+// Comments/Notes for game nights
+model Comment {
+  id            String       @id @default(cuid())
+  gameNightId   String
+  gameSessionId String?      // Optional - if comment is about a specific game
+  content       String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  gameNight   GameNight    @relation(fields: [gameNightId], references: [id], onDelete: Cascade)
+  gameSession GameSession? @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+
+  @@index([gameNightId])
+  @@index([gameSessionId])
+  @@index([createdAt])
 }
 
 model Player {
-  id        String   @id @default(cuid())
-  userId    String   // Owner of this player entry
-  name      String
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String   // Owner of this player entry
+  name          String
+  color         String?  // Optional custom color (hex code)
+  avatarUrl     String?  // Optional profile picture URL
+  createdAt     DateTime @default(now())
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   gameResults GameResult[]
@@ -89,9 +112,10 @@ model GameSession {
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
 
-  gameNight GameNight @relation(fields: [gameNightId], references: [id], onDelete: Cascade)
-  game      Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameNight GameNight    @relation(fields: [gameNightId], references: [id], onDelete: Cascade)
+  game      Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
   results   GameResult[]
+  comments  Comment[]
 
   @@index([gameNightId])
   @@index([gameId])

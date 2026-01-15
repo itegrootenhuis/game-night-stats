@@ -76,7 +76,7 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { name, date } = body
+    const { name, date, groupTag } = body
 
     // Verify the game night belongs to this user
     const existingGameNight = await prisma.gameNight.findUnique({
@@ -90,7 +90,7 @@ export async function PATCH(
       )
     }
 
-    const updateData: { name?: string; date?: Date } = {}
+    const updateData: { name?: string; date?: Date; groupTag?: string | null } = {}
     
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim().length === 0) {
@@ -104,6 +104,10 @@ export async function PATCH(
 
     if (date !== undefined) {
       updateData.date = new Date(date)
+    }
+
+    if (groupTag !== undefined) {
+      updateData.groupTag = groupTag && typeof groupTag === 'string' && groupTag.trim().length > 0 ? groupTag.trim() : null
     }
 
     const gameNight = await prisma.gameNight.update({

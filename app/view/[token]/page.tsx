@@ -384,6 +384,31 @@ export default function ViewPage({ params }: { params: Promise<{ token: string }
           </div>
         )}
 
+        {/* Game Nights List */}
+        {stats.gameNights.length > 0 && (
+          <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-4 mb-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-emerald-400" />
+              Game Nights
+            </h3>
+            <div className="space-y-2">
+              {stats.gameNights.map(gameNight => (
+                <Link
+                  key={gameNight.id}
+                  href={`/view/${resolvedParams.token}/game-nights/${gameNight.id}`}
+                  className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 transition group"
+                >
+                  <div>
+                    <p className="font-medium text-white group-hover:text-teal-400 transition">{gameNight.name}</p>
+                    <p className="text-sm text-zinc-400">{formatDate(gameNight.date)}</p>
+                  </div>
+                  <span className="text-zinc-500 group-hover:text-teal-400 transition">→</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Recent Games */}
         <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-4">
           <h3 className="text-lg font-semibold text-white mb-4">Recent Games</h3>

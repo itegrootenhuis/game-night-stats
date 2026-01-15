@@ -10,6 +10,8 @@ import { toast } from 'sonner'
 interface Player {
   id: string
   name: string
+  color?: string | null
+  avatarUrl?: string | null
   stats: {
     totalGames: number
     wins: number
@@ -26,9 +28,14 @@ export default function PlayersPage() {
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [editingPlayer, setEditingPlayer] = useState<{ id: string; name: string } | null>(null)
+  const [editingPlayer, setEditingPlayer] = useState<{ id: string; name: string; color?: string | null; avatarUrl?: string | null } | null>(null)
   const [editName, setEditName] = useState('')
+  const [editColor, setEditColor] = useState('#0d7377')
+  const [editAvatarUrl, setEditAvatarUrl] = useState('')
+  const [newPlayerColor, setNewPlayerColor] = useState('#0d7377')
+  const [newPlayerAvatarUrl, setNewPlayerAvatarUrl] = useState('')
   const [saving, setSaving] = useState(false)
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     fetchPlayers()
@@ -58,12 +65,18 @@ export default function PlayersPage() {
       const res = await fetch('/api/players', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newPlayerName.trim() })
+        body: JSON.stringify({ 
+          name: newPlayerName.trim(),
+          color: newPlayerColor || null,
+          avatarUrl: newPlayerAvatarUrl.trim() || null
+        })
       })
 
       if (res.ok) {
         toast.success(`${newPlayerName.trim()} added successfully!`)
         setNewPlayerName('')
+        setNewPlayerColor('#0d7377')
+        setNewPlayerAvatarUrl('')
         setShowAddPlayer(false)
         fetchPlayers()
       } else {
@@ -105,18 +118,33 @@ export default function PlayersPage() {
   }
 
   const startEditing = (player: Player) => {
-    setEditingPlayer({ id: player.id, name: player.name })
+    setEditingPlayer({ 
+      id: player.id, 
+      name: player.name,
+      color: player.color,
+      avatarUrl: player.avatarUrl
+    })
     setEditName(player.name)
+    setEditColor(player.color || '#0d7377')
+    setEditAvatarUrl(player.avatarUrl || '')
   }
 
   const cancelEditing = () => {
     setEditingPlayer(null)
     setEditName('')
+    setEditColor('#0d7377')
+    setEditAvatarUrl('')
   }
 
   const saveEdit = async () => {
     if (!editingPlayer || !editName.trim()) return
-    if (editName.trim() === editingPlayer.name) {
+    
+    // Check if anything has changed
+    const nameChanged = editName.trim() !== editingPlayer.name
+    const colorChanged = editColor !== (editingPlayer.color || '#0d7377')
+    const avatarChanged = editAvatarUrl.trim() !== (editingPlayer.avatarUrl || '')
+    
+    if (!nameChanged && !colorChanged && !avatarChanged) {
       cancelEditing()
       return
     }
@@ -126,12 +154,21 @@ export default function PlayersPage() {
       const res = await fetch(`/api/players/${editingPlayer.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editName.trim() })
+        body: JSON.stringify({ 
+          name: editName.trim(),
+          color: editColor || null,
+          avatarUrl: editAvatarUrl.trim() || null
+        })
       })
 
       if (res.ok) {
         setPlayers(players.map(p => 
-          p.id === editingPlayer.id ? { ...p, name: editName.trim() } : p
+          p.id === editingPlayer.id ? { 
+            ...p, 
+            name: editName.trim(),
+            color: editColor || null,
+            avatarUrl: editAvatarUrl.trim() || null
+          } : p
         ))
         toast.success('Player updated')
         cancelEditing()
@@ -212,11 +249,47 @@ export default function PlayersPage() {
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
               </button>
               <button
-                onClick={() => { setShowAddPlayer(false); setNewPlayerName(''); setError('') }}
+                onClick={() => { 
+                  setShowAddPlayer(false); 
+                  setNewPlayerName(''); 
+                  setNewPlayerColor('#0d7377');
+                  setNewPlayerAvatarUrl('');
+                  setError('') 
+                }}
                 className="px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition"
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1.5">Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={newPlayerColor}
+                    onChange={(e) => setNewPlayerColor(e.target.value)}
+                    className="w-12 h-10 rounded-lg bg-zinc-800 border border-zinc-700 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={newPlayerColor}
+                    onChange={(e) => setNewPlayerColor(e.target.value)}
+                    placeholder="#0d7377"
+                    className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 mb-1.5">Avatar URL (optional)</label>
+                <input
+                  type="url"
+                  value={newPlayerAvatarUrl}
+                  onChange={(e) => setNewPlayerAvatarUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-teal-500"
+                />
+              </div>
             </div>
             {error && (
               <p className="mt-2 text-sm text-red-400">{error}</p>
@@ -233,38 +306,85 @@ export default function PlayersPage() {
                 className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-zinc-800"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-600 to-sky-500 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-semibold">
-                      {(editingPlayer?.id === player.id ? editName : player.name).charAt(0).toUpperCase()}
-                    </span>
+                  <div 
+                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
+                    style={{ 
+                      backgroundColor: (player.avatarUrl && !imageErrors[player.id]) ? 'transparent' : (player.color || '#0d7377')
+                    }}
+                  >
+                    {player.avatarUrl && !imageErrors[player.id] ? (
+                      <img
+                        src={player.avatarUrl}
+                        alt={player.name}
+                        className="w-full h-full object-cover rounded-full"
+                        onError={() => {
+                          setImageErrors(prev => ({ ...prev, [player.id]: true }))
+                        }}
+                      />
+                    ) : (
+                      <span className="text-white font-semibold">
+                        {(editingPlayer?.id === player.id ? editName : player.name).charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     {editingPlayer?.id === player.id ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') saveEdit()
-                            if (e.key === 'Escape') cancelEditing()
-                          }}
-                          autoFocus
-                          className="flex-1 px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:border-teal-500"
-                        />
-                        <button
-                          onClick={saveEdit}
-                          disabled={saving || !editName.trim()}
-                          className="p-1 rounded hover:bg-zinc-700 text-teal-400 disabled:opacity-50"
-                        >
-                          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={cancelEditing}
-                          className="p-1 rounded hover:bg-zinc-700 text-zinc-400"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveEdit()
+                              if (e.key === 'Escape') cancelEditing()
+                            }}
+                            autoFocus
+                            className="flex-1 px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:border-teal-500"
+                          />
+                          <button
+                            onClick={saveEdit}
+                            disabled={saving || !editName.trim()}
+                            className="p-1 rounded hover:bg-zinc-700 text-teal-400 disabled:opacity-50"
+                          >
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="p-1 rounded hover:bg-zinc-700 text-zinc-400"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-xs text-zinc-500 mb-1">Color</label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={editColor}
+                                onChange={(e) => setEditColor(e.target.value)}
+                                className="w-10 h-8 rounded bg-zinc-800 border border-zinc-700 cursor-pointer"
+                              />
+                              <input
+                                type="text"
+                                value={editColor}
+                                onChange={(e) => setEditColor(e.target.value)}
+                                className="flex-1 px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-white text-xs focus:outline-none focus:border-teal-500"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-zinc-500 mb-1">Avatar URL</label>
+                            <input
+                              type="url"
+                              value={editAvatarUrl}
+                              onChange={(e) => setEditAvatarUrl(e.target.value)}
+                              placeholder="https://..."
+                              className="w-full px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-teal-500"
+                            />
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <>

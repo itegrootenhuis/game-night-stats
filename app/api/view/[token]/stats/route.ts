@@ -61,6 +61,11 @@ export async function GET(
       userId
     }
     
+    // Filter by group tag if share link has one
+    if (shareLink.groupTag) {
+      gameNightDateFilter.groupTag = shareLink.groupTag
+    }
+    
     const dateRangeFilter: any = {}
     if (startDate) {
       const start = new Date(startDate)

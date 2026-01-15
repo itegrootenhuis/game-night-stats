@@ -51,13 +51,15 @@ export async function GET(
     }
 
     // Calculate player stats for this game
-    const playerStats: Record<string, { name: string; wins: number; played: number }> = {}
+    const playerStats: Record<string, { name: string; color: string | null; avatarUrl: string | null; wins: number; played: number }> = {}
     
     game.gameSessions.forEach(session => {
       session.results.forEach(result => {
         if (!playerStats[result.playerId]) {
           playerStats[result.playerId] = {
             name: result.player.name,
+            color: result.player.color,
+            avatarUrl: result.player.avatarUrl,
             wins: 0,
             played: 0
           }
@@ -73,7 +75,11 @@ export async function GET(
     const leaderboard = Object.entries(playerStats)
       .map(([playerId, stats]) => ({
         playerId,
-        ...stats,
+        name: stats.name,
+        color: stats.color,
+        avatarUrl: stats.avatarUrl,
+        wins: stats.wins,
+        played: stats.played,
         winRate: stats.played > 0 ? Math.round((stats.wins / stats.played) * 100) : 0
       }))
       .sort((a, b) => {

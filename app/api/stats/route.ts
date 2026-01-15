@@ -26,10 +26,16 @@ export async function GET(request: Request) {
     const endDate = searchParams.get('endDate')
     const gameId = searchParams.get('gameId')
     const playerId = searchParams.get('playerId')
+    const groupTag = searchParams.get('groupTag')
 
     // Build date filters
     const gameNightDateFilter: any = {
       userId: user.id
+    }
+    
+    // Filter by group tag if specified
+    if (groupTag) {
+      gameNightDateFilter.groupTag = groupTag
     }
     
     const dateRangeFilter: any = {}
@@ -159,6 +165,8 @@ export async function GET(request: Request) {
         return {
           id: player.id,
           name: player.name,
+          color: player.color,
+          avatarUrl: player.avatarUrl,
           totalGames,
           wins,
           winRate
@@ -198,7 +206,7 @@ export async function GET(request: Request) {
         id: session.id,
         gameName: session.game.name,
         gameNightName: session.gameNight.name,
-        date: session.createdAt,
+        date: session.gameNight.date,
         winners: session.results
           .filter(r => r.isWinner)
           .map(r => r.player.name),

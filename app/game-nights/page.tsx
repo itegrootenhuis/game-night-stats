@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, Plus, Trash2, Gamepad2, Pencil, Check, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, Calendar, Plus, Trash2, Gamepad2, Pencil, Check, X, Loader2, Users } from 'lucide-react'
 import { Skeleton } from '@/components/Skeleton'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { toast } from 'sonner'
@@ -11,6 +11,7 @@ interface GameNight {
   id: string
   name: string
   date: string
+  groupTag: string | null
   stats: {
     totalGames: number
     playerCount: number
@@ -234,12 +235,20 @@ export default function GameNightsPage() {
                   ) : (
                     <>
                       <div>
-                        <Link
-                          href={`/game-nights/${gameNight.id}`}
-                          className="text-lg font-semibold text-white hover:text-teal-400 transition"
-                        >
-                          {gameNight.name}
-                        </Link>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Link
+                            href={`/game-nights/${gameNight.id}`}
+                            className="text-lg font-semibold text-white hover:text-teal-400 transition"
+                          >
+                            {gameNight.name}
+                          </Link>
+                          {gameNight.groupTag && (
+                            <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-teal-600/20 text-teal-400">
+                              <Users className="w-3 h-3" />
+                              {gameNight.groupTag}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-zinc-500 flex items-center gap-1 mt-1">
                           <Calendar className="w-3.5 h-3.5" />
                           {formatDate(gameNight.date)}
