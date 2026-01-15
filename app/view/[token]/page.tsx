@@ -352,7 +352,7 @@ export default function ViewPage({ params }: { params: Promise<{ token: string }
                         border: '1px solid #3f3f46',
                         borderRadius: '8px'
                       }}
-                      formatter={(value: number, name: string) => [`${value}%`, 'Win Rate']}
+                      formatter={(value) => [`${value}%`, 'Win Rate']}
                     />
                   </PieChart>
                 </ResponsiveContainer>
