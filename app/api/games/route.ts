@@ -62,7 +62,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    console.log('[API /api/games POST] Starting request')
+    
     const user = await getAuthenticatedUser()
+    console.log('[API /api/games POST] Auth result:', user ? `User ${user.id}` : 'No user')
     
     if (!user) {
       return NextResponse.json(
@@ -73,6 +76,7 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const { name } = body
+    console.log('[API /api/games POST] Request body:', { name })
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json(
@@ -81,16 +85,21 @@ export async function POST(request: Request) {
       )
     }
 
+    console.log('[API /api/games POST] Creating game in database...')
     const game = await prisma.game.create({
       data: {
         name: name.trim(),
         userId: user.id
       }
     })
+    console.log('[API /api/games POST] Game created:', game.id)
 
     return NextResponse.json(game, { status: 201 })
   } catch (error: unknown) {
-    console.error('Failed to create game:', error)
+    console.error('[API /api/games POST] Error:', error)
+    console.error('[API /api/games POST] Error type:', typeof error)
+    console.error('[API /api/games POST] Error name:', error instanceof Error ? error.name : 'unknown')
+    console.error('[API /api/games POST] Error message:', error instanceof Error ? error.message : String(error))
     
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
       return NextResponse.json(
@@ -100,7 +109,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to create game' },
+      { error: 'Failed to create game', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

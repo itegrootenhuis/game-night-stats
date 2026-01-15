@@ -72,7 +72,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    console.log('[API /api/players POST] Starting request')
+    
     const user = await getAuthenticatedUser()
+    console.log('[API /api/players POST] Auth result:', user ? `User ${user.id}` : 'No user')
     
     if (!user) {
       return NextResponse.json(
@@ -83,6 +86,7 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const { name, color, avatarUrl } = body
+    console.log('[API /api/players POST] Request body:', { name, color, avatarUrl })
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json(
@@ -91,6 +95,7 @@ export async function POST(request: Request) {
       )
     }
 
+    console.log('[API /api/players POST] Creating player in database...')
     const player = await prisma.player.create({
       data: {
         name: name.trim(),
@@ -99,10 +104,14 @@ export async function POST(request: Request) {
         userId: user.id
       }
     })
+    console.log('[API /api/players POST] Player created:', player.id)
 
     return NextResponse.json(player, { status: 201 })
   } catch (error: unknown) {
-    console.error('Failed to create player:', error)
+    console.error('[API /api/players POST] Error:', error)
+    console.error('[API /api/players POST] Error type:', typeof error)
+    console.error('[API /api/players POST] Error name:', error instanceof Error ? error.name : 'unknown')
+    console.error('[API /api/players POST] Error message:', error instanceof Error ? error.message : String(error))
     
     // Handle unique constraint violation
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
@@ -113,7 +122,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to create player' },
+      { error: 'Failed to create player', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }
