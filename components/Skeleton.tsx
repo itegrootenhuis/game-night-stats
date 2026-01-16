@@ -67,6 +67,9 @@ export function SkeletonWidget({ className }: SkeletonProps) {
 }
 
 export function SkeletonChart({ className }: SkeletonProps) {
+  // Use deterministic heights based on index to avoid hydration mismatch
+  const heights = [65, 45, 80, 55, 70, 60] // Fixed percentages for each bar
+  
   return (
     <div className={cn('rounded-xl bg-zinc-900 border border-zinc-800 p-4', className)}>
       <Skeleton className="h-5 w-32 mb-4" />
@@ -75,7 +78,7 @@ export function SkeletonChart({ className }: SkeletonProps) {
           <Skeleton 
             key={i} 
             className="w-8 rounded-t"
-            style={{ height: `${30 + Math.random() * 70}%` }}
+            style={{ height: `${heights[i]}%` }}
           />
         ))}
       </div>

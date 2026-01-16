@@ -43,9 +43,18 @@ Track your game night statistics, see who wins the most, and settle debates with
    cp .env.example .env.local
    ```
    
-   Update `.env.local` with your database connection string:
-   ```
+   Update `.env.local` with your configuration:
+   ```env
+   # Database
    DATABASE_URL="postgresql://user:password@host:5432/database?schema=public"
+   
+   # Supabase (for authentication)
+   NEXT_PUBLIC_SUPABASE_URL="your-supabase-url"
+   NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+   
+   # Email (for contact form)
+   RESEND_API_KEY="your-resend-api-key"
+   CONTACT_US_EMAIL="your-email@example.com"  # Defaults to itegrootenhuis@gmail.com if not set
    ```
 
 4. Set up the database:
@@ -83,7 +92,12 @@ npm run db:studio
 
 1. Push your code to GitHub
 2. Import the project in Vercel
-3. Add environment variables in Vercel dashboard
+3. Add environment variables in Vercel dashboard:
+   - `DATABASE_URL` - Your PostgreSQL connection string (use Supabase connection pooler for serverless)
+   - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous key
+   - `RESEND_API_KEY` - Your Resend API key (for contact form emails)
+   - `CONTACT_US_EMAIL` - Email address to receive contact form submissions (optional, defaults to itegrootenhuis@gmail.com)
 4. Deploy
 
 ## License

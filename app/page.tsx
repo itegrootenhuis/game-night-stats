@@ -769,8 +769,8 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen p-4 pb-20">
-      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto">
+    <main className="min-h-screen pb-20">
+      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto px-4 pt-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-white">Dashboard</h1>
@@ -1044,43 +1044,47 @@ export default function Home() {
           </div>
 
           {/* Date Range Filter */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">
-                <Calendar className="w-3 h-3 inline mr-1" />
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">
-                <Calendar className="w-3 h-3 inline mr-1" />
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                min={startDate || undefined}
-                className="w-full px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition"
-              />
-            </div>
-          </div>
-          {(startDate || endDate) && (
-            <button
-              onClick={() => {
-                setStartDate('')
-                setEndDate('')
-              }}
-              className="text-xs text-teal-400 hover:text-teal-300"
-            >
-              Clear date range
-            </button>
+          {(gameNights.length > 0 || (stats?.overview.totalGameNights ?? 0) > 0) && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">
+                    <Calendar className="w-3 h-3 inline mr-1" />
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">
+                    <Calendar className="w-3 h-3 inline mr-1" />
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate || undefined}
+                    className="w-full px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition"
+                  />
+                </div>
+              </div>
+              {(startDate || endDate) && (
+                <button
+                  onClick={() => {
+                    setStartDate('')
+                    setEndDate('')
+                  }}
+                  className="text-xs text-teal-400 hover:text-teal-300"
+                >
+                  Clear date range
+                </button>
+              )}
+            </>
           )}
           </div>
         </div>
@@ -1261,7 +1265,7 @@ export default function Home() {
         {!loadingFilter && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Leaderboard / Game Stats List */}
-            <div>
+            <div className="flex flex-col">
               <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
                 {selectedGameNightId && selectedGameNight
                   ? `${selectedGameNight.name}${selectedGameId ? ` - ${games.find(g => g.id === selectedGameId)?.name || 'Game'}` : ''}${selectedPlayerId ? ` - ${players.find(p => p.id === selectedPlayerId)?.name || 'Player'}` : ''} Leaderboard`
@@ -1272,7 +1276,7 @@ export default function Home() {
                       : 'Overall Leaderboard'}
               </h2>
             {displayLeaderboard.length > 0 ? (
-              <div className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+              <div className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden flex-1">
                 {displayLeaderboard.map((item, index) => (
                   <div
                     key={item.id}
@@ -1313,7 +1317,7 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6 text-center">
+              <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6 text-center flex-1 flex flex-col justify-center min-h-[200px]">
                 <Trophy className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
                 <p className="text-zinc-500">
                   {selectedPlayerId ? 'No games played yet' : selectedGameId ? 'No games played yet for this game' : 'No games recorded yet'}
@@ -1324,12 +1328,12 @@ export default function Home() {
             </div>
 
             {/* Recent Games */}
-            <div>
+            <div className="flex flex-col">
               <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3">
                 {selectedGameNightId ? 'Games This Night' : 'Recent Games'}
               </h2>
             {filteredRecentGames.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1">
                 {selectedGameNightId ? (
                   // Game night specific games
                   (filteredRecentGames as Array<{ id: string; gameName: string; winners: string[]; playerCount: number }>).map((game) => (
@@ -1407,15 +1411,17 @@ export default function Home() {
                 )}
               </div>
             ) : (
-              <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6 text-center">
+              <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6 text-center flex-1 flex flex-col justify-center min-h-[200px]">
                 <Target className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
                 <p className="text-zinc-500">No games played yet</p>
-                <Link 
-                  href="/game-nights/new"
-                  className="inline-block mt-3 px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium transition"
-                >
-                  Start Game Night
-                </Link>
+                <div className="mt-3 flex justify-center">
+                  <Link 
+                    href="/game-nights/new"
+                    className="inline-flex items-center px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium transition"
+                  >
+                    Start Game Night
+                  </Link>
+                </div>
               </div>
             )}
             </div>

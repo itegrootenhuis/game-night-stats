@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LogOut, User, ChevronDown, Share2, Settings, Users, Plus, Calendar, X, Gamepad2, Loader2 } from 'lucide-react'
+import { LogOut, User, ChevronDown, Share2, Settings, Users, Plus, Calendar, X, Dice6, Loader2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
@@ -42,11 +42,6 @@ export function Header() {
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()
-  }
-
-  const handleNewGameNight = () => {
-    setShowQuickActions(false)
-    router.push('/game-nights/new')
   }
 
   const handleAddPlayer = () => {
@@ -141,7 +136,7 @@ export function Header() {
   return (
     <>
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
-      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto px-4 h-14 flex items-center justify-between relative">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 relative flex items-center justify-center">
             <img
@@ -157,36 +152,36 @@ export function Header() {
           <span className="font-semibold text-white">Game Night Stats</span>
         </Link>
 
+        {/* Desktop: Centered navigation links */}
+        <div className="hidden md:flex items-center gap-4 absolute left-1/2 -translate-x-1/2">
+          <Link
+            href="/game-nights/new"
+            className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
+            aria-label="Start New Game Night"
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Start New Game Night</span>
+          </Link>
+          <Link
+            href="/games"
+            className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
+            aria-label="Games"
+          >
+            <Dice6 className="w-4 h-4" />
+            <span>Games</span>
+          </Link>
+          <Link
+            href="/players"
+            className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
+            aria-label="Players"
+          >
+            <Users className="w-4 h-4" />
+            <span>Players</span>
+          </Link>
+        </div>
+
         {user ? (
           <div className="flex items-center gap-2">
-            {/* Desktop: Horizontal compact buttons */}
-            <div className="hidden md:flex items-center gap-1.5">
-              <button
-                onClick={handleNewGameNight}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-medium transition-colors"
-                aria-label="New Game Night"
-              >
-                <Calendar className="w-3.5 h-3.5" />
-                <span>New</span>
-              </button>
-              <button
-                onClick={handleAddGame}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium transition-colors"
-                aria-label="Add Game"
-              >
-                <Gamepad2 className="w-3.5 h-3.5" />
-                <span>Game</span>
-              </button>
-              <button
-                onClick={handleAddPlayer}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors"
-                aria-label="Add Player"
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Player</span>
-              </button>
-            </div>
-
             {/* Mobile: Quick Actions Dropdown */}
             <div className="relative md:hidden">
               <button
@@ -207,8 +202,9 @@ export function Header() {
                     onClick={() => setShowQuickActions(false)}
                   />
                   <div className="absolute right-0 mt-2 w-56 rounded-xl bg-zinc-900 border border-zinc-800 shadow-lg z-20 overflow-hidden">
-                    <button
-                      onClick={handleNewGameNight}
+                    <Link
+                      href="/game-nights/new"
+                      onClick={() => setShowQuickActions(false)}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
                     >
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-teal-600 to-sky-500 flex items-center justify-center flex-shrink-0">
@@ -218,13 +214,13 @@ export function Header() {
                         <p className="font-medium text-white">New Game Night</p>
                         <p className="text-xs text-zinc-400">Start tracking games</p>
                       </div>
-                    </button>
+                    </Link>
                     <button
                       onClick={handleAddGame}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
                     >
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
-                        <Gamepad2 className="w-4 h-4 text-white" />
+                        <Dice6 className="w-4 h-4 text-white" />
                       </div>
                       <div className="text-left">
                         <p className="font-medium text-white">Add Game</p>
@@ -282,20 +278,20 @@ export function Header() {
                     </p>
                   </div>
                   <Link
-                    href="/players"
-                    onClick={() => setShowDropdown(false)}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
-                  >
-                    <Users className="w-4 h-4" />
-                    Players
-                  </Link>
-                  <Link
                     href="/share"
                     onClick={() => setShowDropdown(false)}
                     className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
                   >
                     <Share2 className="w-4 h-4" />
                     Share Stats
+                  </Link>
+                  <Link
+                    href="/contact"
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Contact Us
                   </Link>
                   <Link
                     href="/settings"
