@@ -12,9 +12,21 @@ if (dbUrl) {
     const hasPassword = url.password && url.password.length > 0
     const maskedUrl = `${url.protocol}//${url.username}${hasPassword ? ':****' : ''}@${url.hostname}:${url.port}${url.pathname}${url.search}`
     console.log('[Prisma] DATABASE_URL format:', maskedUrl)
+    console.log('[Prisma] Username:', url.username)
+    console.log('[Prisma] Database name:', url.pathname.replace('/', '') || '(default)')
     console.log('[Prisma] Has pgbouncer param:', url.searchParams.has('pgbouncer'))
     console.log('[Prisma] Hostname:', url.hostname)
     console.log('[Prisma] Port:', url.port)
+    
+    // Check for common Supabase connection string issues
+    if (url.username && !url.username.startsWith('postgres.')) {
+      console.error('[Prisma] ⚠️ WARNING: Username should start with "postgres." for Supabase pooler (e.g., postgres.wwuoizzagsygvpnglzgv)')
+    }
+    
+    const dbName = url.pathname.replace('/', '') || 'postgres'
+    if (dbName !== 'postgres') {
+      console.error('[Prisma] ⚠️ WARNING: Database name should be "postgres" for Supabase pooler, but got:', dbName)
+    }
     
     // Warn if using direct connection (port 5432) instead of pooler (port 6543)
     if (url.port === '5432' || (!url.port && url.hostname.includes('supabase.co'))) {
@@ -35,6 +47,21 @@ if (dbUrl) {
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   log: process.env.NODE_ENV === 'production' ? ['error'] : ['query', 'error', 'warn'],
 })
+
+// Test connection on initialization (only in production/serverless)
+if (process.env.NODE_ENV === 'production' && !globalForPrisma.prisma) {
+  prisma.$connect()
+    .then(() => {
+      console.log('[Prisma] ✅ Successfully connected to database')
+    })
+    .catch((error) => {
+      console.error('[Prisma] ❌ Failed to connect to database:', error.message)
+      console.error('[Prisma] Connection error details:', {
+        code: error.code,
+        name: error.name,
+      })
+    })
+}
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
