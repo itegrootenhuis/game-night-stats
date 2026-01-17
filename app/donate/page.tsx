@@ -77,12 +77,12 @@ export default function DonatePage() {
               Your support means the world to us and helps ensure Game Night Stats continues to be a free and useful tool for tracking your game night statistics.
             </p>
             <a
-              href="https://buy.stripe.com/test_3cIbJ14HUajJ6O9anTcfK00"
+              href="https://buymeacoffee.com/gamenightstats"
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full p-4 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-medium text-center transition-colors"
             >
-              Donate via Stripe
+              Donate via Buy Me a Coffee
             </a>
           </div>
 
