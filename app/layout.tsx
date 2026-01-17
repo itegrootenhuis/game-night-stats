@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { WelcomeModal } from '@/components/WelcomeModal'
+import { ScrollToTop } from '@/components/ScrollToTop'
 import { Toaster } from 'sonner'
 import './globals.css'
 
@@ -101,6 +102,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background antialiased flex flex-col">
+        <ScrollToTop />
         <Header />
         <div className="flex-1">
           {children}
