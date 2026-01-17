@@ -136,8 +136,8 @@ export function Header() {
   return (
     <>
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
-      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto px-4 h-14 flex items-center justify-between relative">
-        <Link href="/" className="flex items-center gap-2">
+      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto px-4 h-14 flex items-center justify-between relative overflow-visible">
+        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
           <div className="w-8 h-8 relative flex items-center justify-center">
             <img
               src="/logo.png"
@@ -153,7 +153,7 @@ export function Header() {
         </Link>
 
         {/* Desktop: Centered navigation links */}
-        <div className="hidden md:flex items-center gap-4 absolute left-1/2 -translate-x-1/2">
+        <div className="hidden md:flex items-center gap-4 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
           <Link
             href="/game-nights/new"
             className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
@@ -181,7 +181,7 @@ export function Header() {
         </div>
 
         {user ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {/* Mobile: Quick Actions Dropdown */}
             <div className="relative md:hidden">
               <button
