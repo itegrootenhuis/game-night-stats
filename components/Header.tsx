@@ -163,6 +163,14 @@ export function Header() {
             <span>Start New Game Night</span>
           </Link>
           <Link
+            href="/game-nights"
+            className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
+            aria-label="Game Nights"
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Game Nights</span>
+          </Link>
+          <Link
             href="/games"
             className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
             aria-label="Games"
