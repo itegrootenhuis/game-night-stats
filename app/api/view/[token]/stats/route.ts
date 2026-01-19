@@ -100,6 +100,7 @@ export async function GET(
     } : null
 
     // Get all data for this user (read-only)
+    // If groupTag is set, filter all queries to only include data from that group
     const [
       playerCount,
       gameNightCount,
@@ -110,7 +111,21 @@ export async function GET(
       recentSessions,
       allFilteredSessions
     ] = await Promise.all([
-      prisma.player.count({ where: { userId } }),
+      // Player count: only count players who have results in filtered game nights
+      shareLink.groupTag 
+        ? prisma.player.count({
+            where: {
+              userId,
+              gameResults: {
+                some: {
+                  gameSession: {
+                    gameNight: gameNightDateFilter
+                  }
+                }
+              }
+            }
+          })
+        : prisma.player.count({ where: { userId } }),
       prisma.gameNight.count({ where: gameNightDateFilter }),
       prisma.gameSession.count({ 
         where: {
@@ -118,39 +133,86 @@ export async function GET(
           ...(playerFilter || {})
         }
       }),
-      prisma.player.findMany({
-        where: { 
-          userId,
-          ...(playerId ? { id: playerId } : {})
-        },
-        include: {
-          gameResults: {
-            where: {
-              ...(startDate || endDate || gameId || playerId ? {
-                gameSession: {
-                  ...(startDate || endDate ? { gameNight: gameNightDateFilter } : { gameNight: { userId } }),
-                  ...(gameId ? { gameId } : {})
+      // Players: only include those with results in filtered game nights
+      shareLink.groupTag
+        ? prisma.player.findMany({
+            where: { 
+              userId,
+              ...(playerId ? { id: playerId } : {}),
+              gameResults: {
+                some: {
+                  gameSession: {
+                    gameNight: gameNightDateFilter
+                  }
                 }
-              } : {}),
-              ...(playerId ? { playerId } : {})
+              }
             },
             include: {
-              gameSession: {
+              gameResults: {
+                where: {
+                  gameSession: {
+                    gameNight: gameNightDateFilter,
+                    ...(gameId ? { gameId } : {})
+                  }
+                },
                 include: {
-                  gameNight: true,
-                  game: true
+                  gameSession: {
+                    include: {
+                      gameNight: true,
+                      game: true
+                    }
+                  }
                 }
               }
             }
-          }
-        }
-      }),
-      prisma.game.findMany({
-        where: { userId },
-        orderBy: { name: 'asc' }
-      }),
+          })
+        : prisma.player.findMany({
+            where: { 
+              userId,
+              ...(playerId ? { id: playerId } : {})
+            },
+            include: {
+              gameResults: {
+                where: {
+                  ...(startDate || endDate || gameId || playerId ? {
+                    gameSession: {
+                      ...(startDate || endDate ? { gameNight: gameNightDateFilter } : { gameNight: { userId } }),
+                      ...(gameId ? { gameId } : {})
+                    }
+                  } : {}),
+                  ...(playerId ? { playerId } : {})
+                },
+                include: {
+                  gameSession: {
+                    include: {
+                      gameNight: true,
+                      game: true
+                    }
+                  }
+                }
+              }
+            }
+          }),
+      // Games: only include games played in filtered game nights
+      shareLink.groupTag
+        ? prisma.game.findMany({
+            where: {
+              userId,
+              gameSessions: {
+                some: {
+                  gameNight: gameNightDateFilter
+                }
+              }
+            },
+            orderBy: { name: 'asc' }
+          })
+        : prisma.game.findMany({
+            where: { userId },
+            orderBy: { name: 'asc' }
+          }),
+      // GameNights: already filtered by gameNightDateFilter which includes groupTag
       prisma.gameNight.findMany({
-        where: { userId },
+        where: gameNightDateFilter,
         orderBy: { date: 'desc' }
       }),
       prisma.gameSession.findMany({
@@ -178,8 +240,13 @@ export async function GET(
       })
     ])
 
-    // Calculate leaderboard
-    const leaderboard = players
+    // Filter players list to only include those with results in filtered game nights
+    const filteredPlayers = shareLink.groupTag
+      ? players.filter(p => p.gameResults.length > 0)
+      : players
+
+    // Calculate leaderboard from filtered players
+    const leaderboard = filteredPlayers
       .map(player => {
         const totalGames = player.gameResults.length
         const wins = player.gameResults.filter(r => r.isWinner).length
@@ -200,8 +267,8 @@ export async function GET(
       })
       .slice(0, 10)
 
-    // Total wins
-    const totalWins = players.reduce(
+    // Total wins from filtered players
+    const totalWins = filteredPlayers.reduce(
       (sum, player) => sum + player.gameResults.filter(r => r.isWinner).length,
       0
     )
@@ -217,7 +284,7 @@ export async function GET(
       ownerName,
       shareLinkName: shareLink.name,
       overview: {
-        totalPlayers: playerCount,
+        totalPlayers: filteredPlayers.length,
         totalGameNights: gameNightCount,
         totalGamesPlayed: gameSessionCount,
         totalWins
@@ -237,9 +304,9 @@ export async function GET(
         name,
         count
       })),
-      // Include filter options for the visitor
+      // Include filter options for the visitor (already filtered by groupTag if applicable)
       games: games.map(g => ({ id: g.id, name: g.name })),
-      players: players.map(p => ({ id: p.id, name: p.name })),
+      players: filteredPlayers.map(p => ({ id: p.id, name: p.name })),
       gameNights: gameNights.map(gn => ({ id: gn.id, name: gn.name, date: gn.date }))
     })
   } catch (error) {

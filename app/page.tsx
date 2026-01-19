@@ -476,8 +476,8 @@ export default function Home() {
     if (selectedGameNightId && gameNightStats) {
       return gameNightStats.leaderboard
     }
-    // If date filters are active, use stats API (which supports combined filters)
-    if (startDate || endDate) {
+    // If date filters or group tag are active, use stats API (which supports combined filters)
+    if (startDate || endDate || selectedGroupTag) {
       return stats?.leaderboard || []
     }
     // Otherwise, use specific game/player stats if selected
@@ -530,7 +530,7 @@ export default function Home() {
         const playerColor = playerColorMap.get(p.id) || playerColorMap.get(p.name) || COLORS[0]
         return {
           id: p.id,
-          name: p.name.length > 10 ? p.name.substring(0, 10) + '...' : p.name,
+          name: p.name,
           fullName: p.name,
           wins: p.wins,
           games: p.totalGames,
@@ -539,13 +539,13 @@ export default function Home() {
         }
       })
     }
-    // If date filters are active, use stats API data
-    if (startDate || endDate) {
+    // If date filters or group tag are active, use stats API data (which includes groupTag filtering)
+    if (startDate || endDate || selectedGroupTag) {
       return (stats?.leaderboard || []).slice(0, 8).map(item => {
         const playerColor = item.color || playerColorMap.get(item.id) || playerColorMap.get(item.name) || COLORS[0]
         return {
           id: item.id,
-          name: item.name.length > 10 ? item.name.substring(0, 10) + '...' : item.name,
+          name: item.name,
           fullName: item.name,
           wins: item.wins,
           games: item.totalGames,
@@ -558,7 +558,7 @@ export default function Home() {
     if (selectedPlayerId && playerStats) {
       return playerStats.stats.gameStats.map(g => ({
         id: g.gameId,
-        name: g.gameName.length > 12 ? g.gameName.substring(0, 12) + '...' : g.gameName,
+        name: g.gameName,
         wins: g.wins,
         games: g.played,
         winRate: g.winRate,
@@ -570,7 +570,7 @@ export default function Home() {
         const playerColor = p.color || playerColorMap.get(p.playerId) || playerColorMap.get(p.name) || COLORS[0]
         return {
           id: p.playerId,
-          name: p.name.length > 10 ? p.name.substring(0, 10) + '...' : p.name,
+          name: p.name,
           fullName: p.name,
           wins: p.wins,
           games: p.played,
@@ -583,7 +583,7 @@ export default function Home() {
       const playerColor = (item as any).color || playerColorMap.get(item.id) || playerColorMap.get(item.name) || COLORS[0]
       return {
         id: item.id,
-        name: item.name.length > 10 ? item.name.substring(0, 10) + '...' : item.name,
+        name: item.name,
         fullName: item.name,
         wins: item.wins,
         games: item.totalGames,
@@ -598,7 +598,7 @@ export default function Home() {
   // Win rate chart data for player view
   const winRateChartData = selectedPlayerId && playerStats && !(startDate || endDate)
     ? playerStats.stats.gameStats.map(g => ({
-        name: g.gameName.length > 10 ? g.gameName.substring(0, 10) + '...' : g.gameName,
+        name: g.gameName,
         winRate: g.winRate,
         fullName: g.gameName
       }))
@@ -612,8 +612,8 @@ export default function Home() {
       }))
     : []
 
-  // Use filtered game distribution from stats if date range is selected, otherwise use all games
-  const gamesPlayedChartData = (startDate || endDate) && stats?.gameDistribution
+  // Use filtered game distribution from stats if date range or group tag is selected, otherwise use all games
+  const gamesPlayedChartData = (startDate || endDate || selectedGroupTag) && stats?.gameDistribution
     ? stats.gameDistribution.map(g => ({
         name: g.name,
         value: g.count
@@ -934,16 +934,16 @@ export default function Home() {
                     onChange={(e) => {
                       setSelectedGroupTag(e.target.value)
                     }}
-                    className="w-full px-2 py-2 pr-6 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition cursor-pointer"
+                    className="w-full pl-2 pr-8 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition cursor-pointer"
                   >
                     <option value="">All</option>
                     {groupTags.map(tag => (
                       <option key={tag} value={tag}>
-                        {tag.length > 12 ? tag.substring(0, 12) + '...' : tag}
+                        {tag}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
                 </div>
               </div>
             )}
@@ -966,16 +966,16 @@ export default function Home() {
                       setEndDate('')
                     }
                   }}
-                    className="w-full px-2 py-2 pr-6 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition cursor-pointer"
+                    className="w-full pl-2 pr-8 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition cursor-pointer"
                   >
                     <option value="">All</option>
                     {filteredGameNights.map(gn => (
                       <option key={gn.id} value={gn.id}>
-                        {gn.name.length > 12 ? gn.name.substring(0, 12) + '...' : gn.name}
+                        {gn.name}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
                 </div>
               </div>
             )}
@@ -997,16 +997,16 @@ export default function Home() {
                         setSelectedPlayerId('')
                       }
                     }}
-                    className="w-full px-2 py-2 pr-6 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition cursor-pointer"
+                    className="w-full pl-2 pr-8 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition cursor-pointer"
                   >
                     <option value="">All</option>
                     {filteredGames.map(game => (
                       <option key={game.id} value={game.id}>
-                        {game.name.length > 12 ? game.name.substring(0, 12) + '...' : game.name}
+                        {game.name}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
                 </div>
               </div>
             )}
@@ -1028,16 +1028,16 @@ export default function Home() {
                         setSelectedGameId('')
                       }
                     }}
-                    className="w-full px-2 py-2 pr-6 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition cursor-pointer"
+                    className="w-full pl-2 pr-8 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition cursor-pointer"
                   >
                     <option value="">All</option>
                     {filteredPlayers.map(player => (
                       <option key={player.id} value={player.id}>
-                        {player.name.length > 12 ? player.name.substring(0, 12) + '...' : player.name}
+                        {player.name}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
                 </div>
               </div>
             )}
@@ -1047,7 +1047,7 @@ export default function Home() {
           {(gameNights.length > 0 || (stats?.overview.totalGameNights ?? 0) > 0) && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div>
+                <div className="min-w-0">
                   <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">
                     <Calendar className="w-3 h-3 inline mr-1" />
                     Start Date
@@ -1056,10 +1056,11 @@ export default function Home() {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition"
+                    className="w-full min-w-0 px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition"
+                    style={{ maxWidth: '100%', boxSizing: 'border-box' }}
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">
                     <Calendar className="w-3 h-3 inline mr-1" />
                     End Date
@@ -1069,7 +1070,8 @@ export default function Home() {
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     min={startDate || undefined}
-                    className="w-full px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition"
+                    className="w-full min-w-0 px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-xs appearance-none focus:outline-none focus:border-teal-500 transition"
+                    style={{ maxWidth: '100%', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
@@ -1121,7 +1123,7 @@ export default function Home() {
                     fontSize={14}
                     tickLine={false} 
                     axisLine={false}
-                    width={80}
+                    width={120}
                   />
                   <Tooltip content={<CustomBarTooltip />} cursor={{ fill: 'rgba(13, 115, 119, 0.1)' }} />
                   <Bar dataKey="wins" shape={CustomBarShape} />
@@ -1231,7 +1233,7 @@ export default function Home() {
                     fontSize={14}
                     tickLine={false} 
                     axisLine={false}
-                    width={55}
+                    width={120}
                   />
                   <Tooltip 
                     content={({ active, payload, label }) => {
@@ -1276,7 +1278,7 @@ export default function Home() {
                       : 'Overall Leaderboard'}
               </h2>
             {displayLeaderboard.length > 0 ? (
-              <div className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden flex-1">
+              <div className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden">
                 {displayLeaderboard.map((item, index) => (
                   <div
                     key={item.id}
@@ -1317,7 +1319,7 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6 text-center flex-1 flex flex-col justify-center min-h-[200px]">
+              <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6 text-center flex flex-col justify-center min-h-[200px]">
                 <Trophy className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
                 <p className="text-zinc-500">
                   {selectedPlayerId ? 'No games played yet' : selectedGameId ? 'No games played yet for this game' : 'No games recorded yet'}

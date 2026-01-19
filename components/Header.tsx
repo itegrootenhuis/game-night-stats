@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogOut, User, ChevronDown, Share2, Settings, Users, Plus, Calendar, X, Dice6, Loader2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
@@ -10,6 +10,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 export function Header() {
   const router = useRouter()
+  const pathname = usePathname()
   const supabase = createClient()
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [loading, setLoading] = useState(true)
@@ -21,6 +22,9 @@ export function Header() {
   const [gameName, setGameName] = useState('')
   const [submittingPlayer, setSubmittingPlayer] = useState(false)
   const [submittingGame, setSubmittingGame] = useState(false)
+  
+  // Check if we're in visitor view
+  const isVisitorView = pathname?.startsWith('/view/') ?? false
 
   useEffect(() => {
     const getUser = async () => {
@@ -153,44 +157,47 @@ export function Header() {
         </Link>
 
         {/* Desktop: Centered navigation links */}
-        <div className="hidden md:flex items-center gap-4 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
-          <Link
-            href="/game-nights/new"
-            className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
-            aria-label="Start New Game Night"
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Start New Game Night</span>
-          </Link>
-          <Link
-            href="/game-nights"
-            className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
-            aria-label="Game Nights"
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Game Nights</span>
-          </Link>
-          <Link
-            href="/games"
-            className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
-            aria-label="Games"
-          >
-            <Dice6 className="w-4 h-4" />
-            <span>Games</span>
-          </Link>
-          <Link
-            href="/players"
-            className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
-            aria-label="Players"
-          >
-            <Users className="w-4 h-4" />
-            <span>Players</span>
-          </Link>
-        </div>
+        {!isVisitorView && (
+          <div className="hidden md:flex items-center gap-4 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
+            <Link
+              href="/game-nights/new"
+              className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
+              aria-label="Start New Game Night"
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Start New Game Night</span>
+            </Link>
+            <Link
+              href="/game-nights"
+              className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
+              aria-label="Game Nights"
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Game Nights</span>
+            </Link>
+            <Link
+              href="/games"
+              className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
+              aria-label="Games"
+            >
+              <Dice6 className="w-4 h-4" />
+              <span>Games</span>
+            </Link>
+            <Link
+              href="/players"
+              className="flex items-center gap-1.5 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
+              aria-label="Players"
+            >
+              <Users className="w-4 h-4" />
+              <span>Players</span>
+            </Link>
+          </div>
+        )}
 
         {user ? (
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Mobile: Quick Actions Dropdown */}
+            {!isVisitorView && (
             <div className="relative md:hidden">
               <button
                 onClick={() => {
@@ -250,7 +257,8 @@ export function Header() {
                   </div>
                 </>
               )}
-            </div>
+              </div>
+            )}
 
             {/* User Menu */}
             <div className="relative">

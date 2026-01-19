@@ -102,9 +102,9 @@ export async function GET(request: Request) {
         include: {
           gameResults: {
             where: {
-              ...(startDate || endDate || gameId || playerId ? {
+              ...(startDate || endDate || groupTag || gameId || playerId ? {
                 gameSession: {
-                  ...(startDate || endDate ? { gameNight: gameNightDateFilter } : { gameNight: { userId: user.id } }),
+                  ...(startDate || endDate || groupTag ? { gameNight: gameNightDateFilter } : { gameNight: { userId: user.id } }),
                   ...(gameId ? { gameId } : {})
                 }
               } : {}),

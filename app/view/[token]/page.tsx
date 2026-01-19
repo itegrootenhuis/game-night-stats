@@ -8,7 +8,8 @@ import {
   Trophy, 
   Dice5,
   Eye,
-  AlertCircle
+  AlertCircle,
+  ChevronDown
 } from 'lucide-react'
 import {
   BarChart,
@@ -178,55 +179,63 @@ export default function ViewPage({ params }: { params: Promise<{ token: string }
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-medium text-zinc-500 mb-1">Game</label>
-              <select
-                value={selectedGameId}
-                onChange={(e) => {
-                  setSelectedGameId(e.target.value)
-                  if (e.target.value) setSelectedPlayerId('')
-                }}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="">All Games</option>
-                {stats.games.map(game => (
-                  <option key={game.id} value={game.id}>{game.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={selectedGameId}
+                  onChange={(e) => {
+                    setSelectedGameId(e.target.value)
+                    if (e.target.value) setSelectedPlayerId('')
+                  }}
+                  className="w-full pl-3 pr-8 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 appearance-none cursor-pointer"
+                >
+                  <option value="">All Games</option>
+                  {stats.games.map(game => (
+                    <option key={game.id} value={game.id}>{game.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none stroke-[3]" />
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-zinc-500 mb-1">Player</label>
-              <select
-                value={selectedPlayerId}
-                onChange={(e) => {
-                  setSelectedPlayerId(e.target.value)
-                  if (e.target.value) setSelectedGameId('')
-                }}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="">All Players</option>
-                {stats.players.map(player => (
-                  <option key={player.id} value={player.id}>{player.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={selectedPlayerId}
+                  onChange={(e) => {
+                    setSelectedPlayerId(e.target.value)
+                    if (e.target.value) setSelectedGameId('')
+                  }}
+                  className="w-full pl-3 pr-8 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 appearance-none cursor-pointer"
+                >
+                  <option value="">All Players</option>
+                  {stats.players.map(player => (
+                    <option key={player.id} value={player.id}>{player.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none stroke-[3]" />
+              </div>
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-medium text-zinc-500 mb-1">Start Date</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full min-w-0 px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                style={{ maxWidth: '100%', boxSizing: 'border-box' }}
               />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-medium text-zinc-500 mb-1">End Date</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full min-w-0 px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                style={{ maxWidth: '100%', boxSizing: 'border-box' }}
               />
             </div>
           </div>
@@ -327,36 +336,49 @@ export default function ViewPage({ params }: { params: Promise<{ token: string }
             {winPercentageData.length === 0 ? (
               <p className="text-zinc-500 text-center py-8">No data yet</p>
             ) : (
-              <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={winPercentageData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="winRate"
-                      nameKey="name"
-                      label={({ name, value }) => `${name}: ${value}%`}
-                      labelLine={false}
-                    >
-                      {winPercentageData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#18181b',
-                        border: '1px solid #3f3f46',
-                        borderRadius: '8px'
-                      }}
-                      formatter={(value) => [`${value}%`, 'Win Rate']}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <>
+                <div className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={winPercentageData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        dataKey="winRate"
+                        nameKey="name"
+                      >
+                        {winPercentageData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#18181b',
+                          border: '1px solid #3f3f46',
+                          borderRadius: '8px'
+                        }}
+                        formatter={(value) => [`${value}%`, 'Win Rate']}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-4 flex flex-wrap justify-center gap-4">
+                  {winPercentageData.map((item, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                      />
+                      <span className="text-sm text-zinc-400">
+                        {item.name}: <span className="text-white font-medium">{item.winRate}%</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -369,7 +391,7 @@ export default function ViewPage({ params }: { params: Promise<{ token: string }
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.gameDistribution} layout="vertical">
                   <XAxis type="number" stroke="#71717a" />
-                  <YAxis dataKey="name" type="category" stroke="#71717a" width={100} />
+                  <YAxis dataKey="name" type="category" stroke="#71717a" width={120} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#18181b',
