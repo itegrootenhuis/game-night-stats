@@ -1,10 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Mail, Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+
+declare global {
+  interface Window {
+    grecaptcha: {
+      ready: (callback: () => void) => void
+      execute: (siteKey: string, options: { action: string }) => Promise<string>
+    }
+  }
+}
 
 export default function ContactPage() {
   const supabase = createClient()
@@ -12,6 +21,38 @@ export default function ContactPage() {
   const [otherSubject, setOtherSubject] = useState<string>('')
   const [body, setBody] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false)
+
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+
+  useEffect(() => {
+    // Load reCAPTCHA v3 script
+    if (recaptchaSiteKey && typeof window !== 'undefined') {
+      const script = document.createElement('script')
+      script.src = `https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`
+      script.async = true
+      script.defer = true
+      script.onload = () => {
+        if (window.grecaptcha) {
+          window.grecaptcha.ready(() => {
+            setRecaptchaLoaded(true)
+          })
+        }
+      }
+      document.head.appendChild(script)
+
+      return () => {
+        // Cleanup: remove script on unmount
+        const existingScript = document.querySelector(`script[src*="recaptcha"]`)
+        if (existingScript) {
+          document.head.removeChild(existingScript)
+        }
+      }
+    } else {
+      // If no site key, allow form to work without reCAPTCHA (for development)
+      setRecaptchaLoaded(true)
+    }
+  }, [recaptchaSiteKey])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,6 +81,19 @@ export default function ContactPage() {
     setSubmitting(true)
 
     try {
+      // Generate reCAPTCHA token if available
+      let recaptchaToken = null
+      if (recaptchaSiteKey && window.grecaptcha && recaptchaLoaded) {
+        try {
+          recaptchaToken = await window.grecaptcha.execute(recaptchaSiteKey, {
+            action: 'submit_contact_form'
+          })
+        } catch (error) {
+          console.error('Failed to generate reCAPTCHA token:', error)
+          // Continue without token - server will handle this
+        }
+      }
+
       // Get user email if authenticated
       const { data: { user } } = await supabase.auth.getUser()
       const userEmail = user?.email || 'Anonymous'
@@ -57,7 +111,8 @@ export default function ContactPage() {
         body: JSON.stringify({
           subject: finalSubject,
           body: body.trim(),
-          userEmail
+          userEmail,
+          recaptchaToken
         })
       })
 

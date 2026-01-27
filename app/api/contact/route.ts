@@ -2,6 +2,51 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { getAuthenticatedUser } from '@/lib/auth'
 
+async function verifyRecaptcha(token: string | null): Promise<boolean> {
+  const secretKey = process.env.RECAPTCHA_SECRET_KEY
+  
+  // If no secret key is configured, skip verification (for development)
+  if (!secretKey) {
+    console.warn('[Contact API] RECAPTCHA_SECRET_KEY not set, skipping verification')
+    return true
+  }
+
+  // If no token provided but secret key exists, require verification
+  if (!token) {
+    console.warn('[Contact API] reCAPTCHA token not provided')
+    return false
+  }
+
+  try {
+    const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `secret=${secretKey}&response=${token}`,
+    })
+
+    const data = await response.json()
+    
+    // Check if verification was successful and score is acceptable (v3 returns score 0.0-1.0)
+    // Typically, scores above 0.5 are considered legitimate
+    const isValid = data.success === true && (data.score ?? 0) >= 0.5
+    
+    if (!isValid) {
+      console.warn('[Contact API] reCAPTCHA verification failed:', {
+        success: data.success,
+        score: data.score,
+        errors: data['error-codes']
+      })
+    }
+    
+    return isValid
+  } catch (error) {
+    console.error('[Contact API] reCAPTCHA verification error:', error)
+    return false
+  }
+}
+
 export async function POST(request: Request) {
   try {
     // Parse request body
@@ -15,7 +60,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const { subject, body: messageBody, userEmail } = body
+    const { subject, body: messageBody, userEmail, recaptchaToken } = body
 
     // Validation
     if (!subject || typeof subject !== 'string' || subject.trim().length === 0) {
@@ -44,6 +89,18 @@ export async function POST(request: Request) {
         { error: 'Message body must be 2000 characters or less' },
         { status: 400 }
       )
+    }
+
+    // Verify reCAPTCHA token if secret key is configured
+    const recaptchaSecretKey = process.env.RECAPTCHA_SECRET_KEY
+    if (recaptchaSecretKey) {
+      const isValidRecaptcha = await verifyRecaptcha(recaptchaToken)
+      if (!isValidRecaptcha) {
+        return NextResponse.json(
+          { error: 'reCAPTCHA verification failed. Please try again.' },
+          { status: 400 }
+        )
+      }
     }
 
     // Get recipient email from environment variable
