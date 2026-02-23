@@ -230,6 +230,19 @@ export function Header() {
                         <p className="text-xs text-zinc-400">Start tracking games</p>
                       </div>
                     </Link>
+                    <Link
+                      href="/game-nights"
+                      onClick={() => setShowQuickActions(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-zinc-600 to-zinc-500 flex items-center justify-center flex-shrink-0">
+                        <Calendar className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-white">Game Nights</p>
+                        <p className="text-xs text-zinc-400">View past game nights</p>
+                      </div>
+                    </Link>
                     <button
                       onClick={handleAddGame}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"

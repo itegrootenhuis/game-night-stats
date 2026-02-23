@@ -18,10 +18,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
+  Cell
 } from 'recharts'
 
 interface Stats {
@@ -336,49 +333,46 @@ export default function ViewPage({ params }: { params: Promise<{ token: string }
             {winPercentageData.length === 0 ? (
               <p className="text-zinc-500 text-center py-8">No data yet</p>
             ) : (
-              <>
-                <div className="h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={winPercentageData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={2}
-                        dataKey="winRate"
-                        nameKey="name"
-                      >
-                        {winPercentageData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#18181b',
-                          border: '1px solid #3f3f46',
-                          borderRadius: '8px'
-                        }}
-                        formatter={(value) => [`${value}%`, 'Win Rate']}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-4 flex flex-wrap justify-center gap-4">
-                  {winPercentageData.map((item, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
-                      />
-                      <span className="text-sm text-zinc-400">
-                        {item.name}: <span className="text-white font-medium">{item.winRate}%</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={winPercentageData} margin={{ left: 0, right: 20, top: 10, bottom: 30 }}>
+                    <XAxis
+                      type="category"
+                      dataKey="name"
+                      stroke="#71717a"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis
+                      type="number"
+                      domain={[0, 100]}
+                      stroke="#71717a"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `${value}%`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#18181b',
+                        border: '1px solid #3f3f46',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value) => [`${value}%`, 'Win Rate']}
+                      labelFormatter={(label) => label}
+                    />
+                    <Bar dataKey="winRate" radius={[4, 4, 0, 0]}>
+                      {winPercentageData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </div>
         </div>

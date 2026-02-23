@@ -1216,8 +1216,19 @@ export default function Home() {
             </h2>
             <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-4">
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={winsChartData} layout="vertical" margin={{ left: 60, right: 20, top: 10, bottom: 10 }}>
+                <BarChart data={winsChartData} margin={{ left: 0, right: 20, top: 10, bottom: 30 }}>
                   <XAxis 
+                    type="category" 
+                    dataKey="name" 
+                    stroke="#71717a" 
+                    fontSize={12}
+                    tickLine={false} 
+                    axisLine={false}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis 
                     type="number" 
                     domain={[0, 100]}
                     stroke="#71717a" 
@@ -1225,15 +1236,6 @@ export default function Home() {
                     tickLine={false} 
                     axisLine={false}
                     tickFormatter={(value) => `${value}%`}
-                  />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
-                    stroke="#71717a" 
-                    fontSize={14}
-                    tickLine={false} 
-                    axisLine={false}
-                    width={120}
                   />
                   <Tooltip 
                     content={({ active, payload, label }) => {
@@ -1255,7 +1257,7 @@ export default function Home() {
                     }}
                     cursor={{ fill: 'rgba(13, 115, 119, 0.1)' }} 
                   />
-                  <Bar dataKey="winRate" shape={CustomBarShape} />
+                  <Bar dataKey="winRate" shape={CustomBarShape} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
